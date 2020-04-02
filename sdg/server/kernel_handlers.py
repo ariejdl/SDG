@@ -22,7 +22,7 @@ from jupyter_client.multikernelmanager import AsyncMultiKernelManager
 
 from ipython_genutils.py3compat import cast_unicode
 
-from handler_utils import WebSocketMixin
+from .handler_utils import WebSocketMixin
 
 # enough time for app to initialise?
 KERNEL_INFO_TIMEOUT = datetime.timedelta(seconds=10)

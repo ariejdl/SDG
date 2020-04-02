@@ -2,8 +2,8 @@
 import os
 import tornado
 
-from terminal_handlers import initialize as init_terminal
-from kernel_handlers import kernel_handlers
+from .terminal_handlers import initialize as init_terminal
+from .kernel_handlers import kernel_handlers
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -43,17 +43,19 @@ class WSEchoHandler(tornado.websocket.WebSocketHandler):
 
 
 def main():
-
     port = 8001
     server_url = 'http://localhost:{}'.format(port)
 
-    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    cur_dir = os.path.abspath(os.getcwd())
 
     settings = {
-        "static_path": os.path.abspath(os.path.join(os.path.dirname(__file__), 'static')),
-        "base_url": "/",
-        "jinja2_env": ""
+        "static_path": os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static')),
+        "base_url": "/"
     }
+
+    print(cur_dir)
+    print(settings)
+    
     application = tornado.web.Application([
         (r"/", MainHandler),
         (r"/echo", WSEchoHandler),
@@ -67,5 +69,3 @@ def main():
     application.listen(port)
     tornado.ioloop.IOLoop.current().start()
 
-if __name__ == "__main__":
-    main()

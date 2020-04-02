@@ -49,12 +49,10 @@ def main():
     cur_dir = os.path.abspath(os.getcwd())
 
     settings = {
-        "static_path": os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'static')),
+        "static_path": os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..', 'static')),
         "base_url": "/"
     }
-
-    print(cur_dir)
-    print(settings)
     
     application = tornado.web.Application([
         (r"/", MainHandler),

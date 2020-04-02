@@ -29,6 +29,9 @@ function wsKernel(kernelID) {
     var ws = new WebSocket("ws://localhost:8888/api/kernels/" + kernelID + "/channels");
     ws.onopen = function() {
 
+        // note parent_header.msg_id seems to enable doing request/reply
+
+        // https://jupyter-client.readthedocs.io/en/stable/messaging.html
         // "username" and "session" keys seem to be optional but must be null for julia
 
         ws.send(JSON.stringify({"header":{"msg_id":uuid(),"username":null,"session":null,"msg_type":"kernel_info_request","version":"5.2"},"metadata":{},"content":{},"buffers":[],"parent_header":{},"channel":"shell"}))
@@ -38,11 +41,12 @@ function wsKernel(kernelID) {
         ws.send(JSON.stringify({"header":{"msg_id":uuid(),"username":null,"session":null,"msg_type":"execute_request","version":"5.2"},"metadata":{},"content":{"code":"a = 2","silent":false,"store_history":true,"user_expressions":{},"allow_stdin":true,"stop_on_error":true},"buffers":[],"parent_header":{},"channel":"shell"}));
 
         ws.send(JSON.stringify({"header":{"msg_id":uuid(),"username":null,"session":null,"msg_type":"execute_request","version":"5.2"},"metadata":{},"content":{"code":"print(a)","silent":false,"store_history":true,"user_expressions":{},"allow_stdin":true,"stop_on_error":true},"buffers":[],"parent_header":{},"channel":"shell"}));
-        
-        //ws.send("test");
+
     };
     ws.onmessage = function (evt) {
-        console.log(evt.data);
+        if (evt.data && evt.data.length > 1e5)
+            throw "too long";
+        console.log(JSON.parse(evt.data));
     };
 }
 

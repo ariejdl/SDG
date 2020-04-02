@@ -1,11 +1,25 @@
 
-var ws = new WebSocket("ws://localhost:8888/echo");
+
+var ws = new WebSocket("ws://localhost:8001/echo");
 ws.onopen = function() {
     ws.send("Hello, world " + new Date().getSeconds())
 };
 ws.onmessage = function (evt) {
    console.log(evt.data);
 };
+
+function simpleTerm() {
+    var term = document.createElement("div");
+    term.className = "xterm";
+    term.style.width = "300px";
+    term.style.height = "100px";
+    document.body.appendChild(term);
+    make_terminal(term, { cols: 20, rows: 10 }, "ws://localhost:8001/terminals/websocket/1");    
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    simpleTerm()
+});
 
 /* treat this as a kind of unit test for back-end to begin with */
 
@@ -26,7 +40,7 @@ var uuid = function () {
 };
 
 function wsKernel(kernelID) {
-    var ws = new WebSocket("ws://localhost:8888/api/kernels/" + kernelID + "/channels");
+    var ws = new WebSocket("ws://localhost:8001/api/kernels/" + kernelID + "/channels");
     ws.onopen = function() {
 
         // note parent_header.msg_id seems to enable doing request/reply

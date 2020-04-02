@@ -2,3 +2,5 @@
 *~
 kernel-*.json
 .ipynb_checkpoints/
+node_modules/
+__pycache__

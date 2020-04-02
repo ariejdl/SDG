@@ -4,3 +4,6 @@ kernel-*.json
 .ipynb_checkpoints/
 node_modules/
 __pycache__
+_inspir/
+__notes/
+_notes/

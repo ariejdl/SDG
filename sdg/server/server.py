@@ -2,8 +2,11 @@
 import os
 import tornado
 
+from notebook.services.contents.filemanager import FileContentsManager
+
 from .terminal_handlers import initialize as init_terminal
-from .kernel_handlers import kernel_handlers
+from .kernel_handlers import handlers as kernel_handlers
+from .contents_handlers import handlers as contents_handlers
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -12,12 +15,11 @@ class MainHandler(tornado.web.RequestHandler):
         <html>
           <head>
 
-        <style>
-        html, body { height: 100%; }
-        </style>
+            <style>
+              html, body { height: 100%; margin: 0; }
+            </style>
 
             <link rel="stylesheet" href="/static/node_modules/xterm/css/xterm.css" />
-            <script src="/static/node_modules/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
             <script src="/static/node_modules/xterm/lib/xterm.js"></script>
 
             <script src="/static/terminado.js"></script>
@@ -51,14 +53,18 @@ def main():
     settings = {
         "static_path": os.path.abspath(
             os.path.join(os.path.dirname(__file__), '..', '..', 'static')),
-        "base_url": "/"
+        # TODO: implement
+        "login_url": "/login",
+        "base_url": "/",
+        "contents_manager": FileContentsManager()
     }
     
     application = tornado.web.Application([
         (r"/", MainHandler),
         (r"/echo", WSEchoHandler),
 
-        *kernel_handlers
+        *kernel_handlers,
+        *contents_handlers
         
     ], **settings)
 

@@ -46,10 +46,6 @@ function make_terminal(element, size, ws_url) {
     };
     // Not going to worry about close/error for the websocket
     */
-
-    var fitAddon = new FitAddon.FitAddon();
-    //term.loadAddon(fitAddon);
-    //fitAddon.fit();
     
     return {socket: ws, term: term};
 }

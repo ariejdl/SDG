@@ -9,13 +9,49 @@ ws.onmessage = function (evt) {
 };
 
 function simpleTerm() {
+    // TODO: calculate pixel size given font size
     var term = document.createElement("div");
     term.className = "xterm";
     term.style.width = "300px";
     term.style.height = "100px";
     document.body.appendChild(term);
-    make_terminal(term, { cols: 20, rows: 10 }, "ws://localhost:8001/terminals/websocket/1");    
+    make_terminal(term, { cols: 40, rows: 10 }, "ws://localhost:8001/terminals/websocket/1");    
 }
+
+// file tests
+fetch("/api/contents/")
+    .then(r => r.json())
+    .then(function(r) {
+
+        if (!r.content || !r.content.length)
+            throw "expected a list of directory content";
+
+        var newFile = 'a.txt';
+        var newFileRename = 'b.txt';
+        
+        fetch('/api/contents/' + newFile, {
+            method: 'PUT',
+            body: JSON.stringify({ 'path': '' })
+        }).then(r => r.json())
+            .then(() => {
+
+                fetch('/api/contents/' + newFile, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ 'path': newFileRename })
+                }).then(r => r.json())
+                    .then((d) => {
+
+                        fetch('/api/contents/' + newFileRename, {
+                            method: 'DELETE'
+                        }).then(r => {
+                            if (r.status !== 204)
+                                throw "Unexpected response";
+                            });
+                        
+                    });
+                
+            });
+    });
 
 document.addEventListener('DOMContentLoaded', function() {
     simpleTerm()

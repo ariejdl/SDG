@@ -2,6 +2,15 @@
 # jupyter websocket handler:
 # https://github.com/jupyter/notebook/blob/master/notebook/services/kernels/handlers.py
 
+import tornado.web
+
+class BaseHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+
+        print(str(self))
+        # TODO: add static encrypted password test and use secure cookie with 1 day duration
+        return "anon_user"
+
 class WebSocketMixin(object):
 
     def set_default_headers(self):

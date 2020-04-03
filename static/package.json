@@ -10,7 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "xterm": "^4.4.0",
-    "xterm-addon-fit": "^0.3.0"
+    "xterm": "^4.4.0"
   }
 }

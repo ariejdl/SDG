@@ -6,6 +6,7 @@ import datetime
 import tornado.websocket
 import tornado.ioloop
 import tornado.web
+from tornado import web
 from tornado.concurrent import Future
 from tornado.ioloop import IOLoop
 
@@ -21,7 +22,7 @@ from jupyter_client.multikernelmanager import AsyncMultiKernelManager
 
 from ipython_genutils.py3compat import cast_unicode
 
-from .handler_utils import WebSocketMixin
+from .handler_utils import WebSocketMixin, BaseHandler
 
 # enough time for app to initialise?
 KERNEL_INFO_TIMEOUT = datetime.timedelta(seconds=10)
@@ -44,7 +45,7 @@ class TempConnectionFileMixin():
         if self.kernel_spec_manager:
             constructor_kwargs['kernel_spec_manager'] = self.kernel_spec_manager
 
-        # override, 
+        # override
         km = self.kernel_manager_factory(
             connection_file='',
             parent=self, log=self.log, kernel_name=kernel_name,
@@ -70,7 +71,7 @@ especially the handlers.py file
 https://github.com/jupyter/notebook/blob/master/notebook/services/kernels/handlers.py
 """
 
-class APIHandler(tornado.web.RequestHandler):
+class KernelAPIHandler(BaseHandler):
     kernel_manager = _kernel_manager
     log = logging
     
@@ -86,9 +87,9 @@ class APIHandler(tornado.web.RequestHandler):
             raise web.HTTPError(400, u'Invalid JSON in body of request')
         return model
 
-class MainKernelHandler(APIHandler):
+class MainKernelHandler(KernelAPIHandler):
 
-    #@web.authenticated
+    @web.authenticated
     def get(self):
         specs = list(kernelspec.find_kernel_specs().keys())
         km = self.kernel_manager
@@ -99,7 +100,7 @@ class MainKernelHandler(APIHandler):
             'running': running
         }))
 
-    #@web.authenticated
+    @web.authenticated
     async def post(self):
         km = self.kernel_manager
         model = self.get_json_body()
@@ -113,15 +114,15 @@ class MainKernelHandler(APIHandler):
         self.set_status(201)
         self.finish(json.dumps(model))
 
-class KernelHandler(APIHandler):
+class KernelHandler(KernelAPIHandler):
 
-    #@web.authenticated
+    @web.authenticated
     def get(self, kernel_id):
         km = self.kernel_manager
         model = make_kernel_model(km, kernel_id)
         self.finish(json.dumps(model))
 
-    #@web.authenticated
+    @web.authenticated
     async def delete(self, kernel_id):
         km = self.kernel_manager
         if kernel_id in km:
@@ -131,9 +132,9 @@ class KernelHandler(APIHandler):
             self.finish(json.dumps({ "error": "kernel_id was not found" }))
             self.set_status(404)
 
-class KernelActionHandler(APIHandler):
+class KernelActionHandler(KernelAPIHandler):
 
-    #@web.authenticated
+    @web.authenticated
     async def post(self, kernel_id, action):
         km = self.kernel_manager
         if action == 'interrupt':
@@ -152,7 +153,7 @@ class KernelActionHandler(APIHandler):
 
         
 # may want to inherit from jupyter_notebook class
-class ZMQChannelsHandler(ZMQStreamHandler, WebSocketMixin, APIHandler):
+class ZMQChannelsHandler(ZMQStreamHandler, WebSocketMixin, KernelAPIHandler):
     
     # class-level registry of open sessions
     # allows checking for conflict on session-id,
@@ -410,7 +411,7 @@ class ZMQChannelsHandler(ZMQStreamHandler, WebSocketMixin, APIHandler):
 _kernel_id_regex = r"(?P<kernel_id>\w+-\w+-\w+-\w+-\w+)"
 _kernel_action_regex = r"(?P<action>restart|interrupt)"
 
-kernel_handlers = [
+handlers = [
     (r"/api/kernels", MainKernelHandler),
     (r"/api/kernels/%s" % _kernel_id_regex, KernelHandler),
     (r"/api/kernels/%s/%s" % (_kernel_id_regex, _kernel_action_regex), KernelActionHandler),

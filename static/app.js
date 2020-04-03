@@ -107,7 +107,7 @@ function wsKernel(kernelID) {
     ws.onmessage = function (evt) {
         if (evt.data && evt.data.length > 1e5)
             throw "too long";
-        console.log(JSON.parse(evt.data));
+        var res = (JSON.parse(evt.data));
     };
 }
 
@@ -115,8 +115,6 @@ fetch('/api/kernels')
     .then(r => r.json())
     .then((r) => {
 
-        console.log(r);
-        
         if (!r['available'].length)
             throw "expected at least one item";
 
@@ -132,21 +130,20 @@ fetch('/api/kernels')
             //body: JSON.stringify({ 'name': r['available'][0] })
         }).then(r => r.json())
             .then((r) => {
-                console.log(r);
 
                 wsKernel(r.id);
 
                 fetch('/api/kernels/' + r.id)
                     .then(r => r.json())
                     .then((r) => {
-                        console.log('info:', r)
+
                     });
 
                 return;
                 fetch('/api/kernels/' + r.id + '/restart', { method: 'POST' })
                     .then(r => r.json())
                     .then((r) => {
-                        console.log('restart:', r)
+
                     });
 
                 fetch('/api/kernels/' + r.id + '/interrupt', { method: 'POST' })

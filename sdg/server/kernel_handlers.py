@@ -17,7 +17,6 @@ from jupyter_client.session import Session
 from jupyter_client.jsonutil import date_default, extract_dates
 from jupyter_client import kernelspec
 from jupyter_client.asynchronous import AsyncKernelClient
-from jupyter_client.manager import start_new_kernel, start_new_async_kernel
 from jupyter_client.multikernelmanager import AsyncMultiKernelManager
 
 from ipython_genutils.py3compat import cast_unicode
@@ -27,7 +26,36 @@ from .handler_utils import WebSocketMixin
 # enough time for app to initialise?
 KERNEL_INFO_TIMEOUT = datetime.timedelta(seconds=10)
 
-_kernel_manager = AsyncMultiKernelManager()
+# override one method to have a tempfile for the connection_file
+# https://github.com/jupyter/jupyter_client/blob/master/jupyter_client/multikernelmanager.py
+class TempConnectionFileMixin():
+
+    def pre_start_kernel(self, kernel_name, **kwargs):
+        kernel_id = kwargs.pop('kernel_id', self.new_kernel_id(**kwargs))
+        if kernel_id in self:
+            raise DuplicateKernelError('Kernel already exists: %s' % kernel_id)
+
+        if kernel_name is None:
+            kernel_name = self.default_kernel_name
+        # kernel_manager_factory is the constructor for the KernelManager
+        # subclass we are using. It can be configured as any Configurable,
+        # including things like its transport and ip.
+        constructor_kwargs = {}
+        if self.kernel_spec_manager:
+            constructor_kwargs['kernel_spec_manager'] = self.kernel_spec_manager
+
+        # override, 
+        km = self.kernel_manager_factory(
+            connection_file='',
+            parent=self, log=self.log, kernel_name=kernel_name,
+            **constructor_kwargs
+        )
+        return km, kernel_name, kernel_id
+
+class CustomMultiKernelManager(TempConnectionFileMixin, AsyncMultiKernelManager):
+    pass
+
+_kernel_manager = CustomMultiKernelManager()
 
 def make_kernel_model(km, kernel_id):
     k = km.get_kernel(kernel_id)

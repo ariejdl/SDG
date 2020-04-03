@@ -31,16 +31,27 @@ fetch("/api/contents/")
         
         fetch('/api/contents/' + newFile, {
             method: 'PUT',
-            body: JSON.stringify({ 'path': '' })
+            body: JSON.stringify({
+                'format': 'text',
+                'type': 'file',
+                'content': 'bla'
+            })
         }).then(r => r.json())
             .then(() => {
+
+                fetch("/api/contents/" + newFile)
+                    .then(r => r.json())
+                    .then(r => {
+                        if (!r.size)
+                            throw "expected greater than 0 file size";
+                    });
+
 
                 fetch('/api/contents/' + newFile, {
                     method: 'PATCH',
                     body: JSON.stringify({ 'path': newFileRename })
                 }).then(r => r.json())
                     .then((d) => {
-
                         fetch('/api/contents/' + newFileRename, {
                             method: 'DELETE'
                         }).then(r => {

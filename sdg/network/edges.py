@@ -32,7 +32,7 @@ class Edge(object):
             'id1': id1_,
             'id2': id2_,
             'type': self.edge_name(),
-            'model': self._model
+            'model': dict(self._model.items())
         }
 
     def deserialize(self, model):

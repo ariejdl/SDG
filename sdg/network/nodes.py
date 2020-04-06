@@ -38,7 +38,7 @@ class Node(object):
         return {
             'id': _id,
             'type': self.node_name(),
-            'model': self._model
+            'model': dict(self._model.items())
         }
 
     def deserialize(self, model):

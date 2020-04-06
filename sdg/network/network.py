@@ -63,10 +63,10 @@ class Network(object):
         del self.edges[key]
 
     def update_node(self, id_, model):
-        current = self.nodes[['id']]
+        current = self.nodes[id_]
         mod = current.serialize(id_)
-        mod.update(model)
-        current.deserialize(mod)
+        mod['model'].update(model)
+        current.deserialize(mod['model'])
 
     def update_edge(self, id1, id2, model):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
@@ -75,8 +75,8 @@ class Network(object):
         key = tuple(sorted([id1, id2]))
         current = self.edges[key]
         mod = current.serialize(id1, id2)
-        mod.update(model)
-        current.deserialize(mod)
+        mod['model'].update(model)
+        current.deserialize(mod['model'])
         
     def deserialize(self, model):
         self.G = nx.from_dict_of_lists(model['network'])

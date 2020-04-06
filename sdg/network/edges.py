@@ -2,8 +2,6 @@
 import json
 from .utils import camel_to_snake
 
-# TODO: easy way to ser and deser different types
-
 _classes = {}
 
 def register_class(cls):

@@ -64,8 +64,6 @@ class Network(object):
 
     def update_node(self, id, model):
         current = self.nodes[id]
-        mod = current.serialize(id)
-        mod['model'].update(model)
         current.deserialize(mod['model'])
 
     def update_edge(self, id1, id2, model):
@@ -74,8 +72,6 @@ class Network(object):
         
         key = tuple(sorted([id1, id2]))
         current = self.edges[key]
-        mod = current.serialize(id1, id2)
-        mod['model'].update(model)
         current.deserialize(mod['model'])
         
     def deserialize(self, model):

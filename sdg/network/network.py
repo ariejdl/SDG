@@ -32,7 +32,7 @@ class Network(object):
         self.G.add_node(_id)
         self.nodes[_id] = create_node(model=model, type=type)
 
-    def add_edge(self, id1, id2, model):
+    def add_edge(self, id1, id2, model, type):
         if id1 is None:
             id1 = self.genid()
         if id2 is None:
@@ -41,11 +41,11 @@ class Network(object):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
             raise Exception('edge\'s nodes not found in network')
         
-        key = sorted([id1, id2])
+        key = tuple(sorted([id1, id2]))
         if key in self.edges or key in self.G.edges:
             raise Exception('edge already in network')
         self.G.add_edge(*key)
-        self.edges[key] = create_edge(model)
+        self.edges[key] = create_edge(model=model, type=type)
 
     def remove_node(self, id_):
         if id_ not in self.nodes or id_ not in self.G.nodes:
@@ -56,7 +56,7 @@ class Network(object):
         self.G.remove_node(id_)
 
     def remove_edge(self, id1, id2):
-        key = sorted([id1, id2])
+        key = tuple(sorted([id1, id2]))
         if key not in self.edges or key not in self.G.edges:
             raise Exception('edge not found')
         self.G.remove_edge(*key)
@@ -72,7 +72,7 @@ class Network(object):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
             raise Exception('edge\'s nodes not found in network')
         
-        key = sorted([id1, id2])
+        key = tuple(sorted([id1, id2]))
         current = self.edges[key]
         mod = current.serialize(id1, id2)
         mod.update(model)
@@ -82,7 +82,8 @@ class Network(object):
         self.G = nx.from_dict_of_lists(model['network'])
         self.nodes = dict([(node['id'], create_node(
             node['model'], type=node['type'])) for node in model['nodes']])
-        self.edges = dict([((edge['id1'], edge['id2']), create_edge(edge))
+        self.edges = dict([((edge['id1'], edge['id2']),
+                            create_edge(edge['model'], type=edge['type']))
                            for edge in model['edges']])
 
     def serialize(self):

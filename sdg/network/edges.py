@@ -13,7 +13,7 @@ def register_class(cls):
 def create_edge(model, type=None):
     C = _classes.get(type)
     if C is None:
-        raise Exception('invalid "type" specified')
+        C = _classes['default_edge']
     return C(model)
 
 class Edge(object):
@@ -31,7 +31,7 @@ class Edge(object):
         return {
             'id1': id1_,
             'id2': id2_,
-            'type': self.edge_name,
+            'type': self.edge_name(),
             'model': self._model
         }
 
@@ -45,5 +45,10 @@ class Edge(object):
         return []
     
 
+@register_class
+class DefaultEdge(Edge):
+    pass
+
+@register_class
 class RESTEdge(Edge):
     pass

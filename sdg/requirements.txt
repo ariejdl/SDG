@@ -1,0 +1,5 @@
+# TODO: update this
+pandas
+tornado
+notebook
+jupyter_client

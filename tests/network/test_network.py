@@ -31,7 +31,6 @@ def test_basic():
     nws = nw.serialize()
     assert nws['nodes'] == []
     assert nws['edges'] == []
-    assert nws['network'] == {}
 
     n1 = create_node({ 'x': 100 }, type=DEFAULT_TEST_NODE)
     n1_s = n1.serialize(10)
@@ -45,10 +44,6 @@ def test_basic():
 
 def ser_test(nw):
     ser = nw.serialize()
-    
-    assert ser['network'][1] == [2,3]
-    assert ser['network'][2] == [1]
-    assert ser['network'][3] == [1]
 
     assert len(ser['nodes']) == 3
     assert ([n for n in ser['nodes'] if n['id'] == 2])[0]['model'] == {'x': 2}
@@ -59,20 +54,19 @@ def ser_test(nw):
 
 def test_network():
     nw = Network({
-        'network': {},
         'nodes': [],
         'edges': []
     })
 
-    nw.add_node(id_=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
-    nw.add_node(id_=2, model={ 'x': 2 }, type=DEFAULT_TEST_NODE)
-    nw.add_node(id_=3, model={ 'y': 1 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id=2, model={ 'x': 2 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id=3, model={ 'y': 1 }, type=DEFAULT_TEST_NODE)
 
     nw.add_edge(1, 2, model={ 'z': 1 }, type=DEFAULT_TEST_EDGE)
     nw.add_edge(1, 3, model={ 'z': 2 }, type=DEFAULT_TEST_EDGE)
 
     with pytest.raises(Exception):
-        nw.add_node(id_=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
+        nw.add_node(id=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
 
     with pytest.raises(Exception):
         nw.add_edge(1, 3, model={ 'z': 2 }, type=DEFAULT_TEST_EDGE)
@@ -88,7 +82,7 @@ def test_network():
     ser_test(nw)
 
     nw.remove_node(1)
-    nw.add_node(id_=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
 
     ser = nw.serialize()
     

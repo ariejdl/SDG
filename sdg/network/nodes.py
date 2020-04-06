@@ -22,6 +22,9 @@ class Node(object):
     # nullable, 1-3, useful for resolution code emission
     _size = None
 
+    # e.g. a DB query
+    _async = False
+
     # for choosing between nodes during resolution, simpler is better
     _complexity_estimate = None
 
@@ -51,6 +54,7 @@ class Node(object):
         return self._language
 
     def emit_code(self):
+        # TODO: would be sensible to cache the last value and clear if change
         raise NotImplementedError()
     
 

@@ -35,13 +35,13 @@ class MainHandler(tornado.web.RequestHandler):
 class WSEchoHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
-        print("WebSocket opened")
+        pass
 
     def on_message(self, message):
         self.write_message(u"You said: " + message)
 
     def on_close(self):
-        print("WebSocket closed")
+        pass
 
 
 def main():
@@ -52,7 +52,7 @@ def main():
 
     settings = {
         "static_path": os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '..', '..', 'static')),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'client')),
         # TODO: implement
         "login_url": "/login",
         "base_url": "/",

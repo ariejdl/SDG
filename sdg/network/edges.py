@@ -1,34 +1,42 @@
 
 import json
+from .utils import camel_to_snake
 
 # TODO: easy way to ser and deser different types
 
-def create_edge(**kwargs):
-    # TODO: python instance form dictionary
-    if kwargs['type'] == 'xyz':
-        pass
-    return Edge(**kwargs)
+_classes = {}
+
+def register_class(cls):
+    _classes[cls.edge_name()] = cls    
+    return cls
+
+def create_edge(model, type=None):
+    C = _classes.get(type)
+    if C is None:
+        raise Exception('invalid "type" specified')
+    return C(model)
 
 class Edge(object):
 
-    _id1 = None
-    _id2 = None
     _model = None
 
-    def __init__(self, **kwargs):
-        self.deser_instance(**kwargs)
+    def __init__(self, model):
+        self.deserialize(model)
 
-    def ser_instance(self):
+    @classmethod
+    def edge_name(cls):
+        return camel_to_snake(cls.__name__)
+    
+    def serialize(self, id1_, id2_):
         return {
-            'id1': self._id1,
-            'id2': self._id2,
+            'id1': id1_,
+            'id2': id2_,
+            'type': self.edge_name,
             'model': self._model
         }
 
-    def deser_instance(self, **kwargs):
-        self._id1 = kwargs['id1']
-        self._id2 = kwargs['id2']
-        self._model = kwargs['model']
+    def deserialize(self, model):
+        self._model = model
     
     def emit_code(self):
         raise NotImplementedError()

@@ -23,14 +23,14 @@ class Network(object):
         else:
             return 1
 
-    def add_node(self, model):
-        if model.get('id') is None:
-            model['id'] = self.genid()
+    def add_node(self, _id, model, type):
+        if _id is None:
+            _id = self.genid()
             
-        if model['id'] in self.nodes or model['id'] in self.G.nodes:
+        if _id in self.nodes or _id in self.G.nodes:
             raise Exception('node already in network')
-        self.G.add_node(model['id'])
-        self.nodes[model['id']] = create_node(model)
+        self.G.add_node(_id)
+        self.nodes[_id] = create_node(model=model, type=type)
 
     def add_edge(self, id1, id2, model):
         if id1 is None:
@@ -47,13 +47,13 @@ class Network(object):
         self.G.add_edge(*key)
         self.edges[key] = create_edge(model)
 
-    def remove_node(self, _id):
-        if _id not in self.nodes or _id not in self.G.nodes:
+    def remove_node(self, id_):
+        if id_ not in self.nodes or id_ not in self.G.nodes:
             raise Exception('node not found')
-        for e in list(self.G.edges(_id)):
+        for e in list(self.G.edges(id_)):
             self.remove_edge(*e)
-        del self.nodes[_id]
-        self.G.remove_node(_id)
+        del self.nodes[id_]
+        self.G.remove_node(id_)
 
     def remove_edge(self, id1, id2):
         key = sorted([id1, id2])
@@ -62,11 +62,11 @@ class Network(object):
         self.G.remove_edge(*key)
         del self.edges[key]
 
-    def update_node(self, model):
-        current = self.nodes[model['id']]
-        mod = current.ser_instance()
+    def update_node(self, id_, model):
+        current = self.nodes[['id']]
+        mod = current.serialize(id_)
         mod.update(model)
-        current.deser_instance(mod)
+        current.deserialize(mod)
 
     def update_edge(self, id1, id2, model):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
@@ -74,20 +74,22 @@ class Network(object):
         
         key = sorted([id1, id2])
         current = self.edges[key]
-        mod = current.ser_instance()
+        mod = current.serialize(id1, id2)
         mod.update(model)
-        current.deser_instance(mod)
+        current.deserialize(mod)
         
     def deserialize(self, model):
         self.G = nx.from_dict_of_lists(model['network'])
-        self.nodes = dict([(node.id, create_node(node)) for node in model['nodes']])
-        self.edges = dict([(edge.id, create_edge(edge)) for edge in model['edges']])
+        self.nodes = dict([(node['id'], create_node(
+            node['model'], type=node['type'])) for node in model['nodes']])
+        self.edges = dict([((edge['id1'], edge['id2']), create_edge(edge))
+                           for edge in model['edges']])
 
     def serialize(self):
         return {
             'network': nx.to_dict_of_lists(self.G),
-            'nodes': [node.ser_instance() for node in self.nodes.values()],
-            'edges': [edge.ser_instance() for edge in self.edges.values()]
+            'nodes': [node.serialize(id_) for (id_, node) in self.nodes.items()],
+            'edges': [edge.serialize(*key) for (key, edge) in self.edges.items()]
         }
 
     def validate(self):
@@ -98,6 +100,23 @@ class Network(object):
         raise NotImplementedError()
 
 class NetworkManager(object):
+    """
+    currently open "network" files
+    """
 
-    def __init__(self):
-        self.networks = {}
+    def __init__(self, model):
+        self.networks = dict([
+            (n['path'], Network(n['network'])) for n in model['networks']])
+
+    def get(self, path):
+        return self.networks[path]
+
+    def create(self, path):
+        if path in self.networks:
+            raise Exception('path already in use')
+        n = Network()
+        self.networks[path] = n
+        return n
+
+    def delete(self, path):
+        del self.networks[path]

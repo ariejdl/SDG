@@ -1,64 +1,66 @@
 
 import json
+from .utils import camel_to_snake
 
-# TODO: easy way to ser and deser different types
+_classes = {}
 
-def create_node(**kwargs):
-    # TODO: python instance form dictionar
-    if model['type'] == 'xyz':
-        pass
-    return Node(**kwargs)
+def register_class(cls):
+    _classes[cls.node_name()] = cls
+    return cls
+
+def create_node(model, type=None):
+    C = _classes.get(type)
+    if C is None:
+        raise Exception('invalid "type" specified: {}'.format(type))
+    return C(model)
 
 class Node(object):
 
     _model = {}
-    _id = None
+    _language = None
 
     # nullable, 1-3, useful for resolution code emission
     _size = None
 
-    def __init__(self, **kwargs):
-        self.deser_instance(**kwargs)
+    # for choosing between nodes during resolution, simpler is better
+    _complexity_estimate = None
 
-    @property
-    def id(self):
-        if _id is None:
-            raise ValueError("_id not set")
-        return _id
+    _library_dependencies = []
 
-    def ser_instance(self):
+    def __init__(self, model):
+        self.deserialize(model)
+
+    @classmethod
+    def node_name(cls):
+        return camel_to_snake(cls.__name__)
+
+    def serialize(self, _id):
         return {
-            'id': self._id,
+            'id': _id,
+            'type': self.node_name(),
             'model': self._model
         }
 
-    def deser_instance(self, **kwargs):
-        self._id = kwargs['id']
-        self._model = kwargs['model']
+    def deserialize(self, model):
+        self._model = model
     
     @property
     def language(self):
-        raise NotImplementedError()
+        if self._language is None:
+            raise Exception('subclass needs a "_language"')
+        return self._language
 
     def emit_code(self):
         raise NotImplementedError()
-
-    def library_dependencies(self):
-        return []
     
 
 class PyNode(Node):
-    
-    @property
-    def language(self):
-        return 'python3'
+    _language = 'python3'
 
 class JSNode(Node):
-    
-    @property
-    def language(self):
-        return 'javascript'
+    _language = 'javascript'
 
 
-class RESTNode(PyNode):
+@register_class
+class PyRESTNode(PyNode):
     _size = 3

@@ -98,10 +98,25 @@ def test_network():
     nw.add_edge(1, 2, model={ 'z': 1 }, type=DEFAULT_TEST_EDGE)
     ser = nw.serialize()
 
-    assert ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]['model'] == {'z': 1}
+    e = ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]
 
-    # test update edge
-    nw.update_edge(1, 2, model={ 'z': -1 })
+    assert e['model'] == {'z': 1}
+    assert e['edge_meta'] == None
+
+    # test update edge 1
+    nw.update_edge(1, 2, model={ 'z': -1 }, edge_meta={ 'child_id': 2 })
     ser = nw.serialize()
 
-    assert ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]['model'] == {'z': -1}
+    e = ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]
+    
+    assert e['model'] == {'z': -1}
+    assert e['edge_meta'] == {'child_id': 2}
+
+    # test update edge 2
+    nw.update_edge(1, 2, model={ 'z': -1 }, edge_meta=None)
+    ser = nw.serialize()
+
+    e = ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]
+    
+    assert e['model'] == {'z': -1}
+    assert e['edge_meta'] == None

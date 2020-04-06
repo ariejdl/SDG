@@ -6,7 +6,7 @@ setup(
     description='SDG app',
     url='http://www.arielakeman.com',
     author='Arie Lakeman',
-    author_email='arie.lakeman@gmail.com',
+    author_email='info@arielakeman.com',
     packages=['sdg'],
     entry_points = {
         'console_scripts': [

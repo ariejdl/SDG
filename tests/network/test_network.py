@@ -64,19 +64,22 @@ def test_network():
         'edges': []
     })
 
-    nw.add_node(_id=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
-    nw.add_node(_id=2, model={ 'x': 2 }, type=DEFAULT_TEST_NODE)
-    nw.add_node(_id=3, model={ 'y': 1 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id_=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id_=2, model={ 'x': 2 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id_=3, model={ 'y': 1 }, type=DEFAULT_TEST_NODE)
 
     nw.add_edge(1, 2, model={ 'z': 1 }, type=DEFAULT_TEST_EDGE)
     nw.add_edge(1, 3, model={ 'z': 2 }, type=DEFAULT_TEST_EDGE)
 
     with pytest.raises(Exception):
-        nw.add_node(_id=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
+        nw.add_node(id_=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
 
     with pytest.raises(Exception):
         nw.add_edge(1, 3, model={ 'z': 2 }, type=DEFAULT_TEST_EDGE)
 
+    with pytest.raises(Exception):
+        nw.add_edge(3, 1, model={ 'z': 2 }, type=DEFAULT_TEST_EDGE)
+        
     ser = ser_test(nw)
 
     # deserialize:
@@ -85,7 +88,7 @@ def test_network():
     ser_test(nw)
 
     nw.remove_node(1)
-    nw.add_node(_id=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
+    nw.add_node(id_=1, model={ 'x': 1 }, type=DEFAULT_TEST_NODE)
 
     ser = nw.serialize()
     

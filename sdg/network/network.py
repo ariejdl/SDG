@@ -23,14 +23,14 @@ class Network(object):
         else:
             return 1
 
-    def add_node(self, _id, model, type):
-        if _id is None:
-            _id = self.genid()
+    def add_node(self, id_, model, type):
+        if id_ is None:
+            id_ = self.genid()
             
-        if _id in self.nodes or _id in self.G.nodes:
+        if id_ in self.nodes or id_ in self.G.nodes:
             raise Exception('node already in network')
-        self.G.add_node(_id)
-        self.nodes[_id] = create_node(model=model, type=type)
+        self.G.add_node(id_)
+        self.nodes[id_] = create_node(model=model, type=type)
 
     def add_edge(self, id1, id2, model, type):
         if id1 is None:

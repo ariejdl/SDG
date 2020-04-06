@@ -34,9 +34,9 @@ class Node(object):
     def node_name(cls):
         return camel_to_snake(cls.__name__)
 
-    def serialize(self, _id):
+    def serialize(self, id_):
         return {
-            'id': _id,
+            'id': id_,
             'type': self.node_name(),
             'model': dict(self._model.items())
         }

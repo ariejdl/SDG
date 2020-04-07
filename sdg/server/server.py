@@ -15,11 +15,8 @@ class MainHandler(tornado.web.RequestHandler):
         <html>
           <head>
 
-            <style>
-            </style>
-
-            <!--<link rel="stylesheet" href="/static/node_modules/xterm/css/xterm.css" />-->
-            <script src="/static/app.bundle.js"></script>
+            <link rel="stylesheet" href="/static/style.css?q=1" />
+            <script src="/static/app.bundle.js?q=1"></script>
 
           </head>
           <body>

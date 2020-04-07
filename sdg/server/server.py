@@ -16,14 +16,10 @@ class MainHandler(tornado.web.RequestHandler):
           <head>
 
             <style>
-              html, body { height: 100%; margin: 0; }
             </style>
 
-            <link rel="stylesheet" href="/static/node_modules/xterm/css/xterm.css" />
-            <script src="/static/node_modules/xterm/lib/xterm.js"></script>
-
-            <script src="/static/terminado.js"></script>
-            <script src="/static/app.js"></script>
+            <!--<link rel="stylesheet" href="/static/node_modules/xterm/css/xterm.css" />-->
+            <script src="/static/app.bundle.js"></script>
 
           </head>
           <body>
@@ -52,7 +48,7 @@ def main():
 
     settings = {
         "static_path": os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '..', '..', 'client')),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'client', 'dist')),
         # TODO: implement
         "login_url": "/login",
         "base_url": "/",

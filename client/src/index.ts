@@ -2,6 +2,7 @@
 import { Terminal } from 'xterm';
 import * as d3 from 'd3';
 import { X } from './component';
+require('./animation');
 
 import './base.scss';
 

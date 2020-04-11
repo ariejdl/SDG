@@ -65,3 +65,6 @@ const relativeVelocity = (absVelocity: number, y_target: number, y_current: numb
         return 0;
     return absVelocity / (y_target - y_current);
 }
+
+// mouse speed
+// https://github.com/Fil/d3-inertia/blob/master/src/index.js

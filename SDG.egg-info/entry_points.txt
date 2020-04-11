@@ -1,3 +1,0 @@
-[console_scripts]
-sdg = sdg.server.server:main
-

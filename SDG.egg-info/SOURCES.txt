@@ -1,7 +1,0 @@
-setup.py
-SDG.egg-info/PKG-INFO
-SDG.egg-info/SOURCES.txt
-SDG.egg-info/dependency_links.txt
-SDG.egg-info/entry_points.txt
-SDG.egg-info/top_level.txt
-sdg/__init__.py

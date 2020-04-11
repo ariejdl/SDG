@@ -8,3 +8,4 @@ _inspir/
 _notes/
 *#
 .#*
+*.egg-info/

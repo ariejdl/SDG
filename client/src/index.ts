@@ -11,6 +11,7 @@ let _mainCanvas;
 let _mainContext;
 let _mainScene: Scene;
 let _mousePos: { x: number, y: number } = {};
+let _zoomState: any = d3.zoomIdentity;
 
 const devicePixelRatio = window.devicePixelRatio || 1;
 
@@ -27,6 +28,10 @@ function windowResize() {
 
 function mouseMove(e) {
     _mousePos = { x: e.clientX, y: e.clientY };
+}
+
+function mouseOut(e) {
+    _mousePos = undefined;
 }
 
 let tick = 0;
@@ -62,7 +67,7 @@ class SceneObject {
 
 class CanvasObject extends SceneObject {
 
-    abstract render(ctx: any, hoverOrDrag: boolean): void
+    abstract render(ctx: any, zoomState: any, hoverOrDrag: boolean): void
 
     abstract containsPoint(x: number, y: number): boolean
     
@@ -77,11 +82,11 @@ class CanvasCircleObject extends SceneObject {
         this.radius = config['radius'];
     }    
 
-    render(ctx: any, hoverOrDrag: boolean) {
+    render(ctx: any, zoomState: any, hoverOrDrag: boolean) {
         ctx.beginPath();
-        ctx.arc(this.x,
-                this.y,
-                this.radius,
+        ctx.arc(zoomState.applyX(this.x),
+                zoomState.applyY(this.y),
+                zoomState.k * this.radius,
                 0,
                 Math.PI * 2);
         if (hoverOrDrag) {
@@ -110,11 +115,13 @@ class CanvasPolygonObject extends SceneObject {
         this.polygon = d3.polygonHull(this.points);
     }
 
-    render(ctx: any, hoverOrDrag: boolean) {
+    render(ctx: any, zoomState: any, hoverOrDrag: boolean) {
         ctx.beginPath();
-        ctx.moveTo(this.points[0][0], this.points[0][1]);
+        ctx.moveTo(zoomState.applyX(this.points[0][0]),
+                   zoomState.applyY(this.points[0][1]));
         for (var i = 1; i < this.points.length; i++) {
-            ctx.lineTo(this.points[i][0], this.points[i][1]);
+            ctx.lineTo(zoomState.applyX(this.points[i][0]),
+                       zoomState.applyY(this.points[i][1]));
         }
         ctx.closePath();
         if (hoverOrDrag) {
@@ -131,17 +138,20 @@ class CanvasPolygonObject extends SceneObject {
 
 class HTMLObject extends SceneObject {
 
-    private container: HTMLElement;
+    public container: HTMLElement;
     private el: HTMLElement;
 
-    constructor(el) {
+    constructor(config) {
+        super(config);
         this.container = document.createElement('div');
-        this.container.appendChild(el);
-        this.el = el;
+        this.container.appendChild(config['el']);
+        this.container.style['position'] = 'absolute';
+        this.el = config['el'];
     }
 
     updateStyle() {
-        this.container.style['transform'] = `translate(${this.x}, ${this.y})`;
+        
+        this.container.style['transform'] = `translate(${this.x}px, ${this.y}px)`;
         this.el.style['transform'] = `scale(${this.objectScale})`;
     }
 
@@ -180,19 +190,28 @@ class Scene {
         this.htmlObjects.splice(idx, 1);
     }
 
-    renderCanvas(ctx: any, x: number, y: number) {
+    renderCanvas(ctx: any, zoomState: any, mousePos: any) {
+
+        let mouseCoord;
+        if (mousePos !== undefined) {
+            mouseCoord = zoomState.invert([mousePos.x, mousePos.y])
+        }
+        
 
         let len = this.canvasObjects.length;
         let topHover: number;
-        while (len--) {
-            if (this.canvasObjects[len].containsPoint(x, y)) {
-                topHover = len;
-                break;
+
+        if (mouseCoord !== undefined) {
+            while (len--) {
+                if (this.canvasObjects[len].containsPoint(mouseCoord[0], mouseCoord[1])) {
+                    topHover = len;
+                    break;
+                }
             }
         }
 
         for (let i = 0; i < this.canvasObjects.length; i++) {
-            this.canvasObjects[i].render(ctx, topHover === i);
+            this.canvasObjects[i].render(ctx, zoomState, topHover === i);
         }
     }
     
@@ -214,7 +233,7 @@ function render() {
 
     ctx.lineWidth = 2;
 
-    _mainScene.renderCanvas(ctx, _mousePos.x, _mousePos.y);
+    _mainScene.renderCanvas(ctx, _zoomState, _mousePos);
 
     requestAnimationFrame(render);
 }
@@ -233,6 +252,28 @@ function setupCanvas() {
     _mainContext = _mainCanvas.getContext("2d");
 
     _mainCanvas.addEventListener('mousemove', mouseMove);
+    _mainCanvas.addEventListener('mouseout', mouseOut);
+
+    const _zoom = d3.zoom()
+    	  .scaleExtent([1/10, 4])
+          .on("zoom", null) // reset callback
+    	  .on("zoom", () => {
+              _zoomState = d3.event.transform;
+
+              d3.select(_mainHTML)
+                  .style("transform", "translate(" + _zoomState.x + "px," + _zoomState.y + "px) scale(" + _zoomState.k + ")")
+                  .style("transform-origin", "0 0");
+
+          });
+
+    d3.select(_mainCanvas)
+        .call(_zoom)
+        .on("wheel", null)
+        .on("wheel", function(e) {
+            d3.event.preventDefault();
+            return false;
+        });    
+    
     
     updateCanvasSize();
 
@@ -241,39 +282,70 @@ function setupCanvas() {
     d3.range(100).map((i) => {
         const x = 40;
         const y = 50;
-        _mainScene.addCanvasObject(
-            new CanvasPolygonObject({
-                x: Math.random() * window.innerWidth,
-                y: Math.random() * window.innerHeight,
-                points: [
-                    [0.5 * x, 0    * y],
-                    [1   * x, 0.33 * y],
-                    [1   * x, 0.66 * y],
-                    [0.5 * x, 1    * y],
-                    [0   * x, 0.66 * y],
-                    [0   * x, 0.33 * y]
-                ]
-            })
-        )
+
+        const obj = new CanvasPolygonObject({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            points: [
+                [0.5 * x, 0    * y],
+                [1   * x, 0.33 * y],
+                [1   * x, 0.66 * y],
+                [0.5 * x, 1    * y],
+                [0   * x, 0.66 * y],
+                [0   * x, 0.33 * y]
+            ]
+        });
+        
+        _mainScene.addCanvasObject(obj);
     });
 
     d3.range(300).map((i) => {
-        _mainScene.addCanvasObject(
-            new CanvasCircleObject({
-                x: Math.random() * window.innerWidth,
-                y: Math.random() * window.innerHeight,
-                radius: 10
-            })
-        )
-    });    
+        const obj = new CanvasCircleObject({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            radius: 10
+        });
+        
+        _mainScene.addCanvasObject(obj);
+    });
+
+    d3.range(20).map((i) => {
+        const obj = new HTMLObject({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            el: simpleTable()
+        });
+
+        _mainHTML.appendChild(obj.container);
+        obj.updateStyle();
+    });
 
     requestAnimationFrame(render);
+}
+
+const simpleTable = () => {
+    const t = document.createElement('table');
+    const tbody = document.createElement('tbody');
+    d3.range(10).map((i) => {
+        const tr = document.createElement('tr');
+        d3.range(5).map((j) => {
+            const td = document.createElement('td');
+            td.innerText = i * j;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+    t.appendChild(tbody);
+    return t;
 }
 
 function HTMLArea() {
     // add a clip path to integrate nicely with Canvas
     // https://css-tricks.com/clipping-masking-css/
 }
+
+// watercolor/sketch webgl effect, can use this, reduce number of samples
+// https://www.shadertoy.com/view/ltyGRV
 
 document.addEventListener('DOMContentLoaded', function() {
 

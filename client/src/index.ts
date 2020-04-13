@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var panel = new DockPanel({ spacing: 0 });
 
     let scene = new SceneWidget();
+    scene.title.label = "System";
+    scene.title.closable = true;
 
     var w1 = createContent('Red');
     var w2 = createContent('Green');
@@ -35,7 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     panel.addWidget(scene);
     panel.addWidget(w2);
-    //panel.addWidget(w3, { mode: 'split-right', ref: w2 });
+    panel.addWidget(w3, { mode: 'split-right', ref: w2 });
+    //panel.addWidget(scene2, { mode: 'split-right', ref: w2 });
 
     panel.id = 'base';
 

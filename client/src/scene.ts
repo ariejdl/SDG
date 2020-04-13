@@ -5,36 +5,7 @@ import { Panel, Widget } from '@lumino/widgets';
 
 require('./animation');
 
-let _mainHTML;
-let _mainCanvas;
-let _mainContext;
-let _mainScene: Scene;
-let _mousePos: { x: number, y: number } = {};
-let _zoom: any;
-let _zoomState: any = d3.zoomIdentity;
-
 const devicePixelRatio = window.devicePixelRatio || 1;
-
-function updateCanvasSize() {
-    _mainCanvas.width = window.innerWidth * devicePixelRatio;
-    _mainCanvas.height = window.innerHeight * devicePixelRatio;
-    // update context
-    _mainContext.scale(devicePixelRatio, devicePixelRatio);
-}
-
-export function windowResize() {
-    updateCanvasSize();
-}
-
-function mouseMove(e) {
-    _mousePos = { x: e.clientX, y: e.clientY };
-}
-
-function mouseOut(e) {
-    _mousePos = undefined;
-}
-
-let tick = 0;
 
 class SceneObject {
     
@@ -213,57 +184,7 @@ class Scene {
     
 }
 
-function render() {
-
-    const width = window.innerWidth,
-          height = window.innerHeight;
-
-    const ctx = _mainContext;
-
-    ctx.clearRect(0, 0, width, height);
-    
-    ctx.fillStyle = "rgba(0,0,0,1.0)";
-    ctx.strokeStyle = "rgba(0,0,0,1.0)";
-
-    tick += 1;
-
-    ctx.lineWidth = 2;
-
-    _mainScene.renderCanvas(ctx, _zoomState, _mousePos);
-
-    requestAnimationFrame(render);
-}
-
-export function setupHTMLBase(parent) {
-    _mainHTML = document.createElement('section');
-    _mainHTML.className = "full-size";
-    parent.appendChild(_mainHTML);
-}
-
-function setupZoom() {
-    _zoom = d3.zoom()
-    	  .scaleExtent([1/10, 4])
-          .on("zoom", null) // reset callback
-    	  .on("zoom", () => {
-              _zoomState = d3.event.transform;
-
-              d3.select(_mainHTML)
-                  .style("transform",
-                         `translate(${_zoomState.x}px,${_zoomState.y}px) scale(${_zoomState.k})`)
-                  .style("transform-origin", "0 0");
-
-          });
-
-    d3.select(_mainCanvas)
-        .call(_zoom)
-        .on("wheel", null)
-        .on("wheel", function(e) {
-            d3.event.preventDefault();
-            return false;
-        });    
-}
-
-function sampleData() {
+function sampleData(scene, html) {
         // sample data
     d3.range(100).map((i) => {
         const x = 40;
@@ -283,7 +204,7 @@ function sampleData() {
             ]
         });
         
-        _mainScene.addCanvasObject(obj);
+        scene.addCanvasObject(obj);
     });
 
     d3.range(300).map((i) => {
@@ -293,7 +214,7 @@ function sampleData() {
             radius: 10
         });
         
-        _mainScene.addCanvasObject(obj);
+        scene.addCanvasObject(obj);
     });
 
     d3.range(5).map((i) => {
@@ -303,31 +224,12 @@ function sampleData() {
             el: simpleTable()
         });
 
-        _mainHTML.appendChild(obj.container);
+        html.appendChild(obj.container);
         obj.updateStyle();
     });
 }
 
-export function setupCanvas(parent) {
-    
-    _mainCanvas = document.createElement('canvas');
-    _mainCanvas.className = "full-size";
-    parent.appendChild(_mainCanvas);
-    _mainContext = _mainCanvas.getContext("2d");
 
-    updateCanvasSize();
-
-    _mainCanvas.addEventListener('mousemove', mouseMove);
-    _mainCanvas.addEventListener('mouseout', mouseOut);    
-    
-    _mainScene = new Scene();
-
-    setupZoom();
-
-    sampleData();
-
-    requestAnimationFrame(render);
-}
 
 const simpleTable = () => {
     const t = document.createElement('table');
@@ -355,12 +257,113 @@ function HTMLArea() {
 
 export class SceneWidget extends Panel {
 
+    private tick: number = 0;
+    private _mainHTML;
+    private  _mainCanvas;
+    private _mainContext;
+    private _mainScene: Scene;
+    private _mousePosOffset: { x: number, y: number } = { x: 0, y: 0 };
+    private _mousePos: { x: number, y: number } = {};
+    private _zoom: any;
+    private _zoomState: any = d3.zoomIdentity;
+
     constructor() {
         super();
         this._widget = new Widget();
         this.addWidget(this._widget);
 
-        setupHTMLBase(this._widget.node);
-        setupCanvas(this._widget.node);
+        this.setupHTMLBase(this._widget.node);
+        this.setupCanvas(this._widget.node);
     }
+
+    protected onResize(msg: Widget.ResizeMessage): void {
+        this._mainCanvas.width = msg.width * devicePixelRatio;
+        this._mainCanvas.height = msg.height * devicePixelRatio;
+        // update context
+        this._mainContext.scale(devicePixelRatio, devicePixelRatio);
+
+        const rect = this._mainCanvas.getBoundingClientRect();
+        this._mousePosOffset = { x: rect.left, y: rect.top };
+    }
+
+    mouseMove(e) {
+        this._mousePos = { x: e.clientX, y: e.clientY };
+    }
+
+    mouseOut(e) {
+        this._mousePos = undefined;
+    }
+
+    setupCanvas(parent) {
+        
+        this._mainCanvas = document.createElement('canvas');
+        this._mainCanvas.className = "full-size";
+        parent.appendChild(this._mainCanvas);
+        this._mainContext = this._mainCanvas.getContext("2d");
+
+        this._mainCanvas.addEventListener('mousemove', this.mouseMove.bind(this));
+        this._mainCanvas.addEventListener('mouseout', this.mouseOut.bind(this));    
+        
+        this._mainScene = new Scene();
+
+        this.setupZoom();
+
+        sampleData(this._mainScene, this._mainHTML);
+
+        requestAnimationFrame(this.render.bind(this));
+    }
+
+    setupHTMLBase(parent) {
+        this._mainHTML = document.createElement('section');
+        this._mainHTML.className = "full-size";
+        parent.appendChild(this._mainHTML);
+    }
+
+    setupZoom() {
+        this._zoom = d3.zoom()
+    	    .scaleExtent([1/10, 4])
+            .on("zoom", null) // reset callback
+    	    .on("zoom", () => {
+                this._zoomState = d3.event.transform;
+
+                d3.select(this._mainHTML)
+                    .style("transform",
+                           `translate(${this._zoomState.x}px,${this._zoomState.y}px) scale(${this._zoomState.k})`)
+                    .style("transform-origin", "0 0");
+
+            });
+
+        d3.select(this._mainCanvas)
+            .call(this._zoom)
+            .on("wheel", null)
+            .on("wheel", function(e) {
+                d3.event.preventDefault();
+                return false;
+            });    
+    }
+
+    render() {
+
+        const width = window.innerWidth,
+              height = window.innerHeight;
+
+        const ctx = this._mainContext;
+
+        ctx.clearRect(0, 0, width, height);
+        
+        ctx.fillStyle = "rgba(0,0,0,1.0)";
+        ctx.strokeStyle = "rgba(0,0,0,1.0)";
+
+        this.tick += 1;
+
+        ctx.lineWidth = 2;
+
+        this._mainScene.renderCanvas(ctx, this._zoomState,
+                                     this._mousePos !== undefined ?
+                                     { x: this._mousePos.x - this._mousePosOffset.x,
+                                       y: this._mousePos.y - this._mousePosOffset.y } : undefined);
+
+        requestAnimationFrame(this.render.bind(this));
+    }
+    
 }

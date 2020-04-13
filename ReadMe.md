@@ -1,8 +1,6 @@
-# Read Me
+# Read Me
 
-
-## Development
-
+## Development
 
 `pip install -e .`
 

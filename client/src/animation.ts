@@ -10,7 +10,15 @@
  * useful: https://gist.github.com/gordonbrander/2ca91ac14beeb804e867
  */
 
-
+/*
+ * can find inspiration from here:
+ * - https://github.com/chenglou/react-motion
+ * - https://www.react-spring.io/docs/hooks/examples
+ *
+ * - seems to be a good way to handle change of focus on one of array of things
+ *    - e.g. photogallery
+ *    - e.g. interruptible/chained transitions
+ */
 
 /*
  * possible to use an array to represent a vector, in order to have x,y,z,a,b,c animation properties? for one object?

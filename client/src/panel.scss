@@ -12,6 +12,14 @@ body {
   background: #F5F6F7;
 }
 
+$tab-height: 32;
+
+/*
+some customisations include:
+- add more space to tab height
+- make tabs equal height
+- use transparency rather than borders for dragged panels
+*/
 
 #main {
   position: absolute;
@@ -57,7 +65,7 @@ body {
 
 .p-DockPanel-overlay {
   background: rgba(255, 255, 255, 0.6);
-  border: 1px dashed black;
+  //border: 1px dashed black;
 }
 
 .p-DockPanel-overlay.p-mod-root-top,
@@ -69,8 +77,8 @@ body {
 }
 
 .p-TabBar {
-  min-height: 24px;
-  max-height: 24px;
+  min-height: $tab-height + px;
+  max-height: $tab-height + px;
 }
 
 .p-TabBar-header {
@@ -89,15 +97,17 @@ body {
 
 .p-TabBar-tab {
   flex: 0 1 125px;
-  min-height: 20px;
-  max-height: 20px;
+  min-height: $tab-height + px;
+  max-height: $tab-height + px;
   min-width: 35px;
   margin-left: -1px;
-  border: 1px solid #C0C0C0;
+  //border: 1px solid #C0C0C0;
   border-bottom: none;
   padding: 0px 10px;
   background: #E5E5E5;
-  font: 12px Helvetica, Arial, sans-serif;
+  //font: 12px Helvetica, Arial, sans-serif;
+
+  //border-radius: 10px 10px 0 0;
 }
 
 .p-TabBar-tab:first-child {
@@ -106,10 +116,10 @@ body {
 
 
 .p-TabBar-tab.p-mod-current {
-  min-height: 23px;
-  max-height: 23px;
+//  min-height: 23px;
+//  max-height: 23px;
   background: white;
-  transform: translateY(1px);
+  //transform: translateY(1px);
 }
 
 .p-TabBar-tab:hover:not(.p-mod-current) {
@@ -118,8 +128,9 @@ body {
 
 .p-TabBar-tabIcon,
 .p-TabBar-tabText,
+.p-TabBar-tabLabel,
 .p-TabBar-tabCloseIcon {
-  line-height: 20px;
+  line-height: $tab-height + px;
 }
 
 .p-TabBar-tab.p-mod-closable > .p-TabBar-tabCloseIcon {

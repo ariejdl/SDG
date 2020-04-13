@@ -1,5 +1,8 @@
 
 import * as d3 from 'd3';
+
+import { Panel, Widget } from '@lumino/widgets';
+
 require('./animation');
 
 let _mainHTML;
@@ -231,10 +234,10 @@ function render() {
     requestAnimationFrame(render);
 }
 
-export function setupHTMLBase() {
+export function setupHTMLBase(parent) {
     _mainHTML = document.createElement('section');
     _mainHTML.className = "full-size";
-    document.body.appendChild(_mainHTML);
+    parent.appendChild(_mainHTML);
 }
 
 function setupZoom() {
@@ -305,11 +308,11 @@ function sampleData() {
     });
 }
 
-export function setupCanvas() {
+export function setupCanvas(parent) {
     
     _mainCanvas = document.createElement('canvas');
     _mainCanvas.className = "full-size";
-    document.body.appendChild(_mainCanvas);
+    parent.appendChild(_mainCanvas);
     _mainContext = _mainCanvas.getContext("2d");
 
     updateCanvasSize();
@@ -349,3 +352,15 @@ function HTMLArea() {
 
 // watercolor/sketch webgl effect, can use this, reduce number of samples
 // https://www.shadertoy.com/view/ltyGRV
+
+export class SceneWidget extends Panel {
+
+    constructor() {
+        super();
+        this._widget = new Widget();
+        this.addWidget(this._widget);
+
+        setupHTMLBase(this._widget.node);
+        setupCanvas(this._widget.node);
+    }
+}

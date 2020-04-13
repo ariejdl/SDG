@@ -1,7 +1,7 @@
 
 //import { Terminal } from 'xterm';
 
-import { setupHTMLBase, setupCanvas, windowResize } from './scene';
+import { SceneWidget } from './scene';
 
 import { DockPanel } from '@lumino/widgets';
 import { ResizeMessage, Widget } from '@lumino/widgets';
@@ -16,7 +16,7 @@ function createContent(title: string): Widget {
   widget.addClass('content');
   widget.addClass(title.toLowerCase());
 
-  widget.title.text = title;
+  widget.title.label = title;
   widget.title.closable = true;
 
   return widget;
@@ -24,15 +24,18 @@ function createContent(title: string): Widget {
 
 document.addEventListener('DOMContentLoaded', function() {
 
+    // https://github.com/jupyterlab/lumino/tree/master/packages/widgets
     var panel = new DockPanel({ spacing: 0 });
+
+    let scene = new SceneWidget();
 
     var w1 = createContent('Red');
     var w2 = createContent('Green');
     var w3 = createContent('Blue');
 
-    panel.addWidget(w1);
+    panel.addWidget(scene);
     panel.addWidget(w2);
-    panel.addWidget(w3, { mode: 'split-right', ref: w2 });
+    //panel.addWidget(w3, { mode: 'split-right', ref: w2 });
 
     panel.id = 'base';
 
@@ -47,8 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onresize = () => { panel.update() };
 
     /*
-    setupHTMLBase();
-    setupCanvas();
+    setupHTMLBase(visualsWidget);
+    setupCanvas(visualsWidget);
     window.onresize = windowResize;
     */
 });

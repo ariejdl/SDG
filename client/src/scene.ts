@@ -78,21 +78,19 @@ class CanvasCircleObject extends SceneObject {
 class CanvasPolygonObject extends SceneObject {
 
     private points: number[];
-    private polygon: any;
 
     constructor(config: any) {
         super(config)
-        this.points = config['points'].map(([a,b]) => [this.x + a, this.y + b]);
-        this.polygon = d3.polygonHull(this.points);
+        this.points = config['points'];
     }
 
     render(ctx: any, zoomState: any, hoverOrDrag: boolean) {
         ctx.beginPath();
-        ctx.moveTo(zoomState.applyX(this.points[0][0]),
-                   zoomState.applyY(this.points[0][1]));
+        ctx.moveTo(zoomState.applyX(this.x + this.points[0][0]),
+                   zoomState.applyY(this.y + this.points[0][1]));
         for (var i = 1; i < this.points.length; i++) {
-            ctx.lineTo(zoomState.applyX(this.points[i][0]),
-                       zoomState.applyY(this.points[i][1]));
+            ctx.lineTo(zoomState.applyX(this.x + this.points[i][0]),
+                       zoomState.applyY(this.y + this.points[i][1]));
         }
         ctx.closePath();
         if (hoverOrDrag) {
@@ -102,7 +100,7 @@ class CanvasPolygonObject extends SceneObject {
     }
 
     containsPoint(x: number, y: number): boolean {
-        return d3.polygonContains(this.points, [x, y]);
+        return d3.polygonContains(this.points, [x - this.x, y - this.y]);
     }    
     
 }
@@ -132,7 +130,7 @@ class HTMLObject extends SceneObject {
 
 class Scene {
 
-    private _canvasObjectDragging: CanvasObject;
+    public draggingObject: CanvasObject;
 
     constructor() {
         this.canvasObjects = [];
@@ -164,7 +162,6 @@ class Scene {
             mouseCoord = zoomState.invert([mousePos.x, mousePos.y])
         }
         
-
         let len = this.canvasObjects.length;
         let topHover: number;
 
@@ -175,6 +172,12 @@ class Scene {
                     break;
                 }
             }
+        }
+
+        if (topHover !== undefined) {
+            this.draggingObject = this.canvasObjects[len];
+        } else {
+            this.draggingObject = undefined;
         }
 
         for (let i = 0; i < this.canvasObjects.length; i++) {
@@ -255,6 +258,10 @@ function HTMLArea() {
 // watercolor/sketch webgl effect, can use this, reduce number of samples
 // https://www.shadertoy.com/view/ltyGRV
 
+// inertia
+// https://bl.ocks.org/pjanik/raw/5872514/
+// probably can extract this from d3.v2
+
 export class SceneWidget extends Panel {
 
     private tick: number = 0;
@@ -267,13 +274,19 @@ export class SceneWidget extends Panel {
     private _zoom: any;
     private _zoomState: any = d3.zoomIdentity;
 
+    private _isZooming: boolean = false;
+    private _isDraggingSceneObject: boolean = false;
+    
     constructor() {
         super();
         this._widget = new Widget();
         this.addWidget(this._widget);
 
         this.setupHTMLBase(this._widget.node);
-        this.setupCanvas(this._widget.node);
+        this.setupCanvas(this._widget.node);        
+
+        // TODO: remove
+        sampleData(this._mainScene, this._mainHTML);
     }
 
     protected onResize(msg: Widget.ResizeMessage): void {
@@ -287,6 +300,9 @@ export class SceneWidget extends Panel {
     }
 
     mouseMove(e) {
+        if (this._isZooming) {
+            return;
+        }
         this._mousePos = { x: e.clientX, y: e.clientY };
     }
 
@@ -298,6 +314,7 @@ export class SceneWidget extends Panel {
         
         this._mainCanvas = document.createElement('canvas');
         this._mainCanvas.className = "full-size";
+        this._mainCanvas.style['background'] = "white";
         parent.appendChild(this._mainCanvas);
         this._mainContext = this._mainCanvas.getContext("2d");
 
@@ -308,12 +325,11 @@ export class SceneWidget extends Panel {
 
         this.setupZoom();
 
-        sampleData(this._mainScene, this._mainHTML);
-
         requestAnimationFrame(this.render.bind(this));
     }
 
     setupHTMLBase(parent) {
+        // TODO: fix scroll behaviour, getting caught on HTML elements
         this._mainHTML = document.createElement('section');
         this._mainHTML.className = "full-size";
         parent.appendChild(this._mainHTML);
@@ -323,7 +339,36 @@ export class SceneWidget extends Panel {
         this._zoom = d3.zoom()
     	    .scaleExtent([1/10, 4])
             .on("zoom", null) // reset callback
+            .on("start", () => {
+                this._isZooming = true;
+            })
+            .on("end", () => {
+                this._isZooming = false;
+                this._isDraggingSceneObject = false;
+                this._mainScene.draggingObject = undefined;
+            })
     	    .on("zoom", () => {
+
+                let dragOnly = (this._zoomState.k - d3.event.transform.k) === 0;
+
+                if (this._mainScene.draggingObject !== undefined &&
+                    (dragOnly || this._isDraggingSceneObject)) {
+                    
+                    this._isDraggingSceneObject = true;
+
+                    const coordinate = d3.event.transform.apply([
+                        d3.event.sourceEvent.clientX,
+                        d3.event.sourceEvent.clientY
+                    ]);
+
+                    console.log(coordinate);
+
+                    this._mainScene.draggingObject.update(
+                        coordinate[0], coordinate[1]);
+                    
+                    return;
+                }
+                
                 this._zoomState = d3.event.transform;
 
                 d3.select(this._mainHTML)
@@ -341,6 +386,24 @@ export class SceneWidget extends Panel {
                 return false;
             });    
     }
+
+    protected onAfterAttach() {
+        this.node.addEventListener('scroll', this, true);
+    }
+
+    protected onBeforeDetach() {
+        this.node.removeEventListener('scroll', this, true);
+    }
+
+    handleEvent(event: Event): void {
+        switch (event.type) {
+        case 'scroll':
+            this._clearHover();
+            break;
+        default:
+            break;
+        }
+    }    
 
     render() {
 

@@ -50,12 +50,12 @@ some customisations include:
   background: #3498DB;
 }
 
-.p-DockTabPanel {
+.lm-DockTabPanel {
   padding-right: 2px;
   padding-bottom: 2px;
 }
 
-.p-DockTabPanel > .p-StackedPanel {
+.lm-DockTabPanel > .lm-StackedPanel {
   padding: 10px;
   background: white;
   border: 1px solid #C0C0C0;
@@ -63,39 +63,39 @@ some customisations include:
   box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.p-DockPanel-overlay {
+.lm-DockPanel-overlay {
   background: rgba(255, 255, 255, 0.6);
   //border: 1px dashed black;
 }
 
-.p-DockPanel-overlay.p-mod-root-top,
-.p-DockPanel-overlay.p-mod-root-left,
-.p-DockPanel-overlay.p-mod-root-right,
-.p-DockPanel-overlay.p-mod-root-bottom,
-.p-DockPanel-overlay.p-mod-root-center {
+.lm-DockPanel-overlay.lm-mod-root-top,
+.lm-DockPanel-overlay.lm-mod-root-left,
+.lm-DockPanel-overlay.lm-mod-root-right,
+.lm-DockPanel-overlay.lm-mod-root-bottom,
+.lm-DockPanel-overlay.lm-mod-root-center {
   border-width: 2px;
 }
 
-.p-TabBar {
+.lm-TabBar {
   min-height: $tab-height + px;
   max-height: $tab-height + px;
 }
 
-.p-TabBar-header {
+.lm-TabBar-header {
   display: none;
 }
 
-.p-TabBar-footer {
+.lm-TabBar-footer {
   flex: 0 0 1px;
   background: #C0C0C0;
 }
 
-.p-TabBar-content {
+.lm-TabBar-content {
   min-width: 0;
   align-items: flex-end;
 }
 
-.p-TabBar-tab {
+.lm-TabBar-tab {
   flex: 0 1 125px;
   min-height: $tab-height + px;
   max-height: $tab-height + px;
@@ -110,39 +110,42 @@ some customisations include:
   //border-radius: 10px 10px 0 0;
 }
 
-.p-TabBar-tab:first-child {
+.lm-TabBar-tab:first-child {
   margin-left: 0;
 }
 
 
-.p-TabBar-tab.p-mod-current {
+.lm-TabBar-tab.lm-mod-current {
 //  min-height: 23px;
 //  max-height: 23px;
   background: white;
   //transform: translateY(1px);
 }
 
-.p-TabBar-tab:hover:not(.p-mod-current) {
+.lm-TabBar-tab:hover:not(.lm-mod-current) {
   background: #F0F0F0;
 }
 
-.p-TabBar-tabIcon,
-.p-TabBar-tabText,
-.p-TabBar-tabLabel,
-.p-TabBar-tabCloseIcon {
+.lm-TabBar-tabIcon,
+.lm-TabBar-tabText,
+.lm-TabBar-tabLabel,
+.lm-TabBar-tabCloseIcon {
   line-height: $tab-height + px;
 }
 
-.p-TabBar-tab.p-mod-closable > .p-TabBar-tabCloseIcon {
+.lm-TabBar-tab.lm-mod-closable > .lm-TabBar-tabCloseIcon {
   margin-left: 4px;
 }
 
-.p-TabBar-tab.p-mod-closable > .p-TabBar-tabCloseIcon:before {
-  content: '\f00d';
-  font-family: FontAwesome;
+.lm-TabBar-tab.lm-mod-closable > .lm-TabBar-tabCloseIcon:before {
+  content: '\00d7';
+  //font-family: FontAwesome;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 28px;
 }
 
-.p-TabBar-tab.p-mod-drag-image {
+.lm-TabBar-tab.lm-mod-drag-image {
   min-height: 23px;
   max-height: 23px;
   min-width: 125px;

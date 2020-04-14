@@ -9,9 +9,9 @@ const devicePixelRatio = window.devicePixelRatio || 1;
 
 class SceneObject {
     
-    private x: number;
-    private y: number;
-    private objectScale: number;
+    public x: number;
+    public y: number;
+    public objectScale: number;
 
     constructor(config: any) {
         this.x = config['x'];
@@ -25,14 +25,6 @@ class SceneObject {
         };
     }
 
-    update(x: number, y: number) {
-        this.x = x;
-        this.y = y;
-    }
-
-    updateScale(objectScale: number) {
-        this.objectScale = objectScale;
-    }
     
 }
 
@@ -155,7 +147,7 @@ class Scene {
         this.htmlObjects.splice(idx, 1);
     }
 
-    renderCanvas(ctx: any, zoomState: any, mousePos: any) {
+    renderCanvas(ctx: any, zoomState: any, isDragging: false, mousePos: any) {
 
         let mouseCoord;
         if (mousePos !== undefined) {
@@ -165,19 +157,23 @@ class Scene {
         let len = this.canvasObjects.length;
         let topHover: number;
 
-        if (mouseCoord !== undefined) {
-            while (len--) {
-                if (this.canvasObjects[len].containsPoint(mouseCoord[0], mouseCoord[1])) {
-                    topHover = len;
-                    break;
+        if (!isDragging) {
+
+            if (mouseCoord !== undefined) {
+                while (len--) {
+                    if (this.canvasObjects[len].containsPoint(mouseCoord[0], mouseCoord[1])) {
+                        topHover = len;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (topHover !== undefined) {
-            this.draggingObject = this.canvasObjects[len];
-        } else {
-            this.draggingObject = undefined;
+            if (topHover !== undefined) {
+                this.draggingObject = this.canvasObjects[len];
+            } else {
+                this.draggingObject = undefined;
+            }
+            
         }
 
         for (let i = 0; i < this.canvasObjects.length; i++) {
@@ -271,10 +267,10 @@ export class SceneWidget extends Panel {
     private _mainScene: Scene;
     private _mousePosOffset: { x: number, y: number } = { x: 0, y: 0 };
     private _mousePos: { x: number, y: number } = {};
-    private _zoom: any;
     private _zoomState: any = d3.zoomIdentity;
 
     private _isZooming: boolean = false;
+    private _isDraggingCanvas: boolean = false;
     private _isDraggingSceneObject: boolean = false;
     
     constructor() {
@@ -336,52 +332,61 @@ export class SceneWidget extends Panel {
     }
 
     setupZoom() {
-        this._zoom = d3.zoom()
+
+        let dragOffset;
+
+        const updateZoom = () => {
+            this._zoomState = d3.event.transform;
+
+            d3.select(this._mainHTML)
+                .style("transform",
+                       `translate(${this._zoomState.x}px,${this._zoomState.y}px) scale(${this._zoomState.k})`)
+                .style("transform-origin", "0 0");
+
+        }
+
+        const endEvent = () => {
+            this._isZooming = false;
+            this._isDraggingCanvas = false;
+            this._isDraggingSceneObject = false;
+            this._mainScene.draggingObject = undefined;
+            dragOffset = undefined;
+        };
+        
+        const zoom = d3.zoom()
     	    .scaleExtent([1/10, 4])
             .on("zoom", null) // reset callback
             .on("start", () => {
                 this._isZooming = true;
             })
-            .on("end", () => {
-                this._isZooming = false;
-                this._isDraggingSceneObject = false;
-                this._mainScene.draggingObject = undefined;
-            })
-    	    .on("zoom", () => {
+            .on("end", endEvent)
+    	    .on("zoom", updateZoom);
 
-                let dragOnly = (this._zoomState.k - d3.event.transform.k) === 0;
-
-                if (this._mainScene.draggingObject !== undefined &&
-                    (dragOnly || this._isDraggingSceneObject)) {
-                    
-                    this._isDraggingSceneObject = true;
-
-                    const coordinate = d3.event.transform.apply([
-                        d3.event.sourceEvent.clientX,
-                        d3.event.sourceEvent.clientY
-                    ]);
-
-                    console.log(coordinate);
-
-                    this._mainScene.draggingObject.update(
-                        coordinate[0], coordinate[1]);
-                    
-                    return;
-                }
-                
-                this._zoomState = d3.event.transform;
-
-                d3.select(this._mainHTML)
-                    .style("transform",
-                           `translate(${this._zoomState.x}px,${this._zoomState.y}px) scale(${this._zoomState.k})`)
-                    .style("transform-origin", "0 0");
-
-            });
-
+        // drag & zoom
+        // https://bl.ocks.org/mbostock/2b534b091d80a8de39219dd076b316cd
         d3.select(this._mainCanvas)
-            .call(this._zoom)
+            .call(d3.drag()
+                  .subject(() => this._mainScene.draggingObject ? true : undefined)
+                  .on("start", () => {
+                      const coordinate = this._zoomState.invert([d3.event.x, d3.event.y]);
+                      dragOffset = {
+                          x: this._mainScene.draggingObject.x - coordinate[0],
+                          y: this._mainScene.draggingObject.y - coordinate[1]
+                      };
+                  })
+                  .on("end", endEvent)
+                  .on("drag", () => {
+                      this._isDraggingSceneObject = true;
+
+                      const coordinate = this._zoomState.invert([d3.event.x, d3.event.y]);
+
+                      this._mainScene.draggingObject.x = coordinate[0] + dragOffset.x;
+                      this._mainScene.draggingObject.y = coordinate[1] + dragOffset.y;
+
+            }))
+            .call(zoom)
             .on("wheel", null)
-            .on("wheel", function(e) {
+            .on("wheel", (e) => {
                 d3.event.preventDefault();
                 return false;
             });    
@@ -421,7 +426,9 @@ export class SceneWidget extends Panel {
 
         ctx.lineWidth = 2;
 
-        this._mainScene.renderCanvas(ctx, this._zoomState,
+        this._mainScene.renderCanvas(ctx,
+                                     this._zoomState,
+                                     this._isZooming || this._isDraggingCanvas || this._isDraggingSceneObject,
                                      this._mousePos !== undefined ?
                                      { x: this._mousePos.x - this._mousePosOffset.x,
                                        y: this._mousePos.y - this._mousePosOffset.y } : undefined);

@@ -11,6 +11,7 @@ import '@lumino/widgets/style/index.css';
 
 import './panel.scss';
 
+// TODO: remove
 function createContent(title: string): Widget {
   var widget = new Widget();
   widget.addClass('content');
@@ -44,17 +45,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     panel.activate();
 
-    //document.body.appendChild(panel.node);
     panel.show();
-    //panel.parent = document.body;
 
     Widget.attach(panel, document.body);
 
     window.onresize = () => { panel.update() };
 
-    /*
-    setupHTMLBase(visualsWidget);
-    setupCanvas(visualsWidget);
-    window.onresize = windowResize;
-    */
 });

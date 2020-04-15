@@ -185,7 +185,7 @@ class Scene {
 
 function sampleData(scene, html) {
         // sample data
-    d3.range(100).map((i) => {
+    d3.range(30).map((i) => {
         const x = 40;
         const y = 50;
 
@@ -206,7 +206,7 @@ function sampleData(scene, html) {
         scene.addCanvasObject(obj);
     });
 
-    d3.range(300).map((i) => {
+    d3.range(30).map((i) => {
         const obj = new CanvasCircleObject({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,

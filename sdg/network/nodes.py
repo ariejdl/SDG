@@ -5,7 +5,10 @@ from .utils import camel_to_snake
 _classes = {}
 
 def register_class(cls):
-    _classes[cls.node_name()] = cls
+    nn = cls.node_name()
+    if nn in _classes:
+        raise Exception('class name already seen: {}'.format(nn))
+    _classes[nn] = cls
     return cls
 
 def create_node(model, type=None):
@@ -64,7 +67,34 @@ class PyNode(Node):
 class JSNode(Node):
     _language = 'javascript'
 
+@register_class
+class GeneralServerNode(Node):
+    _size = 4
 
+@register_class
+class GeneralClientNode(Node):
+    _size = 4
+    
+@register_class
+class ConfigFileNode(Node):
+    _size = 1
+
+@register_class
+class FileNode(Node):
+    _size = 2
+
+@register_class
+class StaticServerNode(Node):
+    _size = 3
+    
+@register_class
+class PyFlaskServerNode(PyNode):
+    _size = 3
+
+@register_class
+class PyTornadoServerNode(PyNode):
+    _size = 3
+    
 @register_class
 class PyRESTNode(PyNode):
     _size = 3

@@ -17,7 +17,6 @@ def setup_module():
 
 def teardown_module():
     shutil.rmtree(_build_dir)
-    pass
 
 
 def test_basic():
@@ -25,12 +24,21 @@ def test_basic():
 
     n = Network({
         'nodes': [
-            {'id': 2, 'type': 'py_rest_node', 'model': {'x': 2}},
-            {'id': 3, 'type': 'py_rest_node', 'model': {'y': 1}},
-            {'id': 1, 'type': 'py_rest_node', 'model': {'x': -1}}
+            {'id': 1, 'type': 'static_server_node', 'model': None },
+            {'id': 2, 'type': 'file_node', 'model': None },
+            {'id': 3, 'type': 'js_client_node', 'model': {'y': 1}},
+            {'id': 4, 'type': 'mapping_table_node', 'model': {'y': 1}},
+             # convert one table to a grouped table
+            {'id': 5, 'type': 'mapping_table_node', 'model': {'y': 1}}, 
+            {'id': 6, 'type': 'js_svg_node', 'model': {'y': 1}},
         ],
         'edges': [
-            {'id1': 1, 'id2': 2, 'type': 'rest_edge', 'model': {'z': 1}, 'edge_meta': { 'child_id': 3 }}]
+            {'id1': 1, 'id2': 3, 'type': None, 'model': {'z': 1}, 'edge_meta': { 'child_id': 3 }},
+            {'id1': 1, 'id2': 2, 'type': None, 'model': None, 'edge_meta': None },
+            {'id1': 2, 'id2': 4, 'type': None, 'model': None, 'edge_meta': None },
+            {'id1': 4, 'id2': 5, 'type': 'mapping_transform_edge', 'model': None, 'edge_meta': None },
+            {'id1': 5, 'id2': 6, 'type': None, 'model': None, 'edge_meta': None }
+        ]
     })
 
     n.build_dir = _build_dir

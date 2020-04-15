@@ -6,7 +6,7 @@
 
 ## Tests
 
-`pytest tests`
+`pytest tests [-s]`
 
 ## front-end
 

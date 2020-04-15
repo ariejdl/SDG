@@ -10,6 +10,8 @@ def register_class(cls):
 
 def create_edge(model, type=None, edge_meta=None):
     C = _classes.get(type)
+    if type is not None and C is None:
+        raise Exception('invalid edge type given: {}'.format(type))
     if C is None:
         C = _classes['default_edge']
     return C(model, edge_meta)

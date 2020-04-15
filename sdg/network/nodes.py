@@ -31,8 +31,8 @@ class Node(object):
     _model = {}
     _language = None
 
-    # nullable, 1-3, useful for resolution code emission
-    size = None
+    # indicates scale from variable -> module/program
+    size = 0
 
     # e.g. a DB query
     _async = False
@@ -138,6 +138,10 @@ class NginxServerNode(WebServerNode):
 @register_class
 class GeneralClientNode(Node):
     size = 4
+
+@register_class
+class JSClientNode(JSNode, GeneralClientNode):
+    size = 3
     
 @register_class
 class ConfigFileNode(Node):
@@ -171,7 +175,7 @@ class PyTornadoServerNode(PyNode, WebServerNode):
     
 @register_class
 class PyRESTNode(PyNode):
-    size = 3
+    size = 2
 
     _model = {
         'route': str,
@@ -181,3 +185,14 @@ class PyRESTNode(PyNode):
         'patch': types.FunctionType,
         'delete': types.FunctionType,
     }
+
+class JSVisualNode(JSNode):
+    size = 1
+
+@register_class
+class JS_CanvasNode(JSVisualNode):
+    pass
+
+@register_class
+class JS_SVGNode(JSVisualNode):
+    pass

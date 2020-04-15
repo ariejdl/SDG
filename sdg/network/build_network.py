@@ -20,14 +20,19 @@ def build_network(network):
         network.build_dir = dir_
 
     # 2) partition network by size 3+, resolve partitions individually
+    # TODO: needs to be a bit cleverer than this...if children within parent, ignore children
     roots = []
     for node_id, node in network.nodes.items():
         if node.size >= 3:
-            roots.append((node_id, node))
+            roots.append(node_id)
 
     # 3) resolve network into tree:
     # - respect edges
     # - avoid cycles
     # - avoid double resolution
 
-    import pdb; pdb.set_trace()
+    for nid in roots:
+        for e in network.G.edges(nid):
+            print(e)
+
+    #import pdb; pdb.set_trace()

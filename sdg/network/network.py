@@ -1,12 +1,17 @@
 
+import shutil
+import networkx as nx
+
 from .nodes import create_node
 from .edges import create_edge
-import networkx as nx
+from .build_network import build_network
 
 class Network(object):
     """
     a graph/network of node types, does not need to be a connected network
     """
+
+    build_dir = None
 
     def __init__(self, model=None):
         if model is not None:
@@ -16,6 +21,10 @@ class Network(object):
             self.G = nx.Graph()
             self.nodes = {}
             self.edges = {}
+
+    def dispose(self):
+        if self.build_dir is not None:
+            shutil.rmtree(self.build_dir)
 
     def genid(self):
         if len(self.G.nodes):
@@ -110,9 +119,9 @@ class NetworkManager(object):
     currently open "network" files
     """
 
-    def __init__(self, model):
+    def __init__(self, networks=[]):
         self.networks = dict([
-            (n['path'], Network(n['network'])) for n in model['networks']])
+            (n['path'], Network(n['network'])) for n in networks])
 
     def get(self, path):
         return self.networks[path]
@@ -125,4 +134,8 @@ class NetworkManager(object):
         return n
 
     def delete(self, path):
+        n = self.networks[path]
+        n.dispose()
         del self.networks[path]
+
+

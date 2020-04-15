@@ -4,6 +4,7 @@ import tornado
 
 from notebook.services.contents.filemanager import FileContentsManager
 
+from ..network.network import NetworkManager
 from .terminal_handlers import initialize as init_terminal
 from .kernel_handlers import handlers as kernel_handlers
 from .contents_handlers import handlers as contents_handlers
@@ -49,7 +50,8 @@ def main():
         # TODO: implement
         "login_url": "/login",
         "base_url": "/",
-        "contents_manager": FileContentsManager()
+        "contents_manager": FileContentsManager(),
+        "network_manager": NetworkManager()
     }
     
     application = tornado.web.Application([

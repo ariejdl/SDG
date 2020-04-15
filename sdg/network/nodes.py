@@ -1,6 +1,7 @@
 
 import json
 from .utils import camel_to_snake
+import types
 
 _classes = {}
 
@@ -12,18 +13,26 @@ def register_class(cls):
     return cls
 
 def create_node(model, type=None):
+    """
+    factory for nodes, this is how deserialization is done
+    """
     C = _classes.get(type)
     if C is None:
         raise Exception('invalid "type" specified: {}'.format(type))
     return C(model)
 
 class Node(object):
+    """
+    note that nodes will have different characteristics when "static" versus when "running", i.e. after
+    code has been emitted and has started execution, rather than before code has even been emitted
+    """
 
+    # default values where they are not supplied
     _model = {}
     _language = None
 
     # nullable, 1-3, useful for resolution code emission
-    _size = None
+    size = None
 
     # e.g. a DB query
     _async = False
@@ -31,6 +40,13 @@ class Node(object):
     # for choosing between nodes during resolution, simpler is better
     _complexity_estimate = None
 
+    # other nodes which are created by this one if not in a part of its network
+    _node_implicit_dependencies = []
+
+    # other nodes which cannot be part of its compilation/code-emission without some kind of separation
+    _node_mutual_exclusions = []
+
+    # language libraries
     _library_dependencies = []
 
     def __init__(self, model):
@@ -57,7 +73,6 @@ class Node(object):
         return self._language
 
     def emit_code(self):
-        # TODO: would be sensible to cache the last value and clear if change
         raise NotImplementedError()
     
 
@@ -67,34 +82,102 @@ class PyNode(Node):
 class JSNode(Node):
     _language = 'javascript'
 
-@register_class
-class GeneralServerNode(Node):
-    _size = 4
+class MappingNode(JSNode):
+    """
+    this is the D3'esque mapping/binding of data to a visual
+    """
+    size = 1
 
 @register_class
+class MappingScalarNode(MappingNode):
+    pass
+
+@register_class
+class MappingCoordinateSystemNode(MappingNode):
+    pass
+
+@register_class
+class MappingNetworkNode(MappingNode):
+    pass
+
+@register_class
+class MappingTableNode(MappingNode):
+    pass
+
+@register_class
+class MappingLookupNode(MappingNode):
+    pass
+
+@register_class
+class MappingTreeNode(MappingNode):
+    pass
+
+@register_class
+class MappingListNode(MappingNode):
+    pass
+
+@register_class
+class GeneralServerNode(Node):
+    size = 4
+
+class WebServerNode(Node):
+    size = 3
+
+    # note this may come from config file node
+    _model = {
+        'port': int
+    }
+
+@register_class
+class NginxServerNode(WebServerNode):
+    _model = {
+        'port': int,
+        'config': None
+    }
+    
+@register_class
 class GeneralClientNode(Node):
-    _size = 4
+    size = 4
     
 @register_class
 class ConfigFileNode(Node):
-    _size = 1
+    size = 1
 
 @register_class
 class FileNode(Node):
-    _size = 2
+    """
+    could be any type of file, e.g. csv/json
+    """
+    size = 2
 
 @register_class
-class StaticServerNode(Node):
-    _size = 3
+class LargeFileNode(Node):
+    """
+    could be any type of file, but noteworthy that it is large and can be treated differently
+    """
+    size = 2
     
 @register_class
-class PyFlaskServerNode(PyNode):
-    _size = 3
+class StaticServerNode(Node):
+    size = 3
+    
+@register_class
+class PyFlaskServerNode(PyNode, WebServerNode):
+    pass
 
 @register_class
-class PyTornadoServerNode(PyNode):
-    _size = 3
+class PyTornadoServerNode(PyNode, WebServerNode):
+    pass
     
 @register_class
 class PyRESTNode(PyNode):
-    _size = 3
+    size = 3
+
+    _model = {
+        'route': str,
+        'get': types.FunctionType,
+        'post': types.FunctionType,
+        'put': types.FunctionType,
+        'patch': types.FunctionType,
+        'delete': types.FunctionType,
+    }

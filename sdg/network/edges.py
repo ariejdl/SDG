@@ -53,3 +53,12 @@ class DefaultEdge(Edge):
 @register_class
 class RESTEdge(Edge):
     pass
+
+class MappingEdge(Edge):
+    """
+    this is the D3'esque mapping/binding of data to a visual
+    """
+
+@register_class
+class MappingTransformEdge(MappingEdge):
+    pass

@@ -24,6 +24,9 @@ comes from: <https://github.com/Microsoft/TypeScript-Babel-Starter#readme>
 - data bound to bar chart; good implementation is probably a javascript 'pivot' (edge)
 
 this needs:
+- need to be able to keep existing server and/or client running while make changes
+  - rebuild parts of the network independently, only the parts that have changed
+  - e.g. keep serving a csv file while change the visual and rebuild the UI
 - well specified 'make' step, e.g. emit code to specified directory
   - emit code into temp directory
 - well specified 'run' step, i.e. start server, inform UI, want to be able to restart the UI and keep running this

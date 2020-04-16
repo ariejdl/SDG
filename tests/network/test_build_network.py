@@ -24,21 +24,27 @@ def test_basic():
 
     n = Network({
         'nodes': [
-            {'id': 1, 'type': 'static_server_node', 'model': None },
-            {'id': 2, 'type': 'file_node', 'model': None },
-            {'id': 3, 'type': 'js_client_node', 'model': None },
-            {'id': 4, 'type': 'mapping_table_node', 'model': None },
+            {'id': 1, 'type': 'static_server_node', 'model': { 'meta': { 'root_id': 1 }  } },
+            {'id': 2, 'type': 'file_node', 'model': { 'meta': { 'root_id': 1 }  } },
+            {'id': 3, 'type': 'js_client_node', 'model': { 'meta': { 'root_id': 3 }  } },
+            {'id': 4, 'type': 'mapping_table_node', 'model': { 'meta': { 'root_id': 3 }  } },
              # convert one table to a grouped table
-            {'id': 5, 'type': 'mapping_table_node', 'model': None },
+            {'id': 5, 'type': 'mapping_table_node', 'model': { 'meta': { 'root_id': 3 }  } },
 
-            {'id': 10, 'type': 'mapping_lookup_node', 'model': { 'width': 200, 'height': 200 } },
+            {'id': 10, 'type': 'mapping_lookup_node', 'model': { 'meta': { 'root_id': 3 }, 'width': 200, 'height': 200 } },
             
             {'id': 6, 'type': 'js_svg_node', 'model': {
+                'meta': { 'root_id': 3 },
                 'tag': 'svg', 'attrs': { 'width': 'conf.width', 'height': 'conf.height' } } },
             {'id': 7, 'type': 'js_svg_node', 'model': {
+                'meta': { 'root_id': 3 },
                 'tag': 'circle', 'attrs': { 'cx': 'x_scale($row[0])', 'cy': 'y_scale($row[1])', 'r': 4 } } },
-            {'id': 8, 'type': 'js_d3_node', 'model': { 'object': 'scaleLinear', 'range': [0, 'conf.width'] } },
-            {'id': 9, 'type': 'js_d3_node', 'model': { 'object': 'scaleLinear', 'range': [0, 'conf.height'] } },
+            {'id': 8, 'type': 'js_d3_node', 'model': {
+                'meta': { 'root_id': 3 },
+                'object': 'scaleLinear', 'range': [0, 'conf.width'] } },
+            {'id': 9, 'type': 'js_d3_node', 'model': {
+                'meta': { 'root_id': 3 },
+                'object': 'scaleLinear', 'range': [0, 'conf.height'] } },
         ],
         'edges': [
             {'id1': 1, 'id2': 3, 'type': None, 'model': None },

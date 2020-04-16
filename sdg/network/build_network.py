@@ -5,11 +5,42 @@ import logging as log
 
 import networkx as nx
 
-class NetworkBuildException(Exception):
-    pass
+from .utils import NetworkBuildException
 
-def resolve_partition(root, language, network):
-    pass
+def resolve_partition(root, size_sorted, language, network):
+
+    #print(roots)
+
+    # 3) resolve network into code (not necessarily a single tree):
+    # - respect edges
+    # - avoid cycles
+    # - avoid double resolution
+    # - detect communication between languages (edges of a different language)
+    # - [detect which things are static dependencies, and which are dynamic, e.g. sunject to user change]
+    #     [- ensure there are no loops in event propagation]
+
+    """
+    for vs in language_roots.values():
+        for nid in vs:
+            for e in network.G.edges(nid):
+                print(e)
+    """
+
+    print('\n')
+
+    sizes = sorted(size_sorted.keys())
+    for s in sizes:
+        for nid in size_sorted[s]:
+            n = network.nodes[nid]
+            n.resolve()
+            print(n)
+            #import pdb; pdb.set_trace()
+
+    """
+    strategies?
+
+    - static server node: serve a given directory
+    """
 
 def build_network(network):
 
@@ -41,26 +72,16 @@ def build_network(network):
         if language is not None:
             roots[root_id]['languages'].add(language)
 
-    # validate that roots are all of same language or None
+    # 3) resolution
     for k,v in roots.items():
+
+        # validate that roots are all of same language or None
         if len(v['languages']) != 1:
             raise NetworkBuildException("network partition has ambiguous number of languages: {}, {}".format(
                 len(v['languages']), list(v['languages'])))
-        v['languages'] = list(v['languages'])
+        
+        language = list(v['languages'])[0]
+        del v['languages']
+        
+        resolve_partition(k, v, language, network)
 
-    #print(roots)
-
-    # 3) resolve network into tree:
-    # - respect edges
-    # - avoid cycles
-    # - avoid double resolution
-    # - detect communication between languages (edges of a different language)
-
-    """
-    for vs in language_roots.values():
-        for nid in vs:
-            for e in network.G.edges(nid):
-                print(e)
-    """
-
-    #import pdb; pdb.set_trace()

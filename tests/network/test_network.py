@@ -38,6 +38,7 @@ def test_basic():
     assert n1_s['model']['x'] == 100
     assert n1_s['type'] == DEFAULT_TEST_NODE
 
+    # invalid type
     with pytest.raises(Exception):
         n1 = create_node({ 'x': 100 }, type='py_rest_node_***')
 

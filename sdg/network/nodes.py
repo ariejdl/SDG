@@ -68,6 +68,9 @@ class Node(object):
     
     def emit_code(self):
         raise NotImplementedError()
+
+    def resolve(self):
+        pass
     
 
 class PyNode(Node):
@@ -158,6 +161,10 @@ class LargeFileNode(Node):
 @register_class
 class StaticServerNode(WebServerNode):
     size = 3
+
+    def resolve(self):
+        super().resolve()
+
 
 @register_class
 class PyStaticServerNode(PyNode, StaticServerNode):

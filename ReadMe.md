@@ -4,6 +4,8 @@
 
 `pip install -e .`
 
+Longer term thoughts: would be nice to have server and client written in typescript could then share code on front-end and back-end.  For example could then generate code in client...drawback is not having nice Python libraries and easier syntax
+
 ## Tests
 
 `pytest tests [-s]`
@@ -21,7 +23,7 @@ comes from: <https://github.com/Microsoft/TypeScript-Babel-Starter#readme>
 
 - static server
 - csv file sent down
-- data bound to bar chart; good implementation is probably a javascript 'pivot' (edge)
+- data bound to a chart
 
 this needs:
 - need to be able to keep existing server and/or client running while make changes

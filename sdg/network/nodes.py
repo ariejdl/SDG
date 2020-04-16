@@ -29,7 +29,7 @@ class Node(object):
 
     # default values where they are not supplied
     _model = {}
-    _language = None
+    language = None
 
     # indicates scale from variable -> module/program
     size = 0
@@ -66,21 +66,15 @@ class Node(object):
     def deserialize(self, model):
         self._model = model
     
-    @property
-    def language(self):
-        if self._language is None:
-            raise Exception('subclass needs a "_language"')
-        return self._language
-
     def emit_code(self):
         raise NotImplementedError()
     
 
 class PyNode(Node):
-    _language = 'python3'
+    language = 'python3'
 
 class JSNode(Node):
-    _language = 'javascript'
+    language = 'javascript'
 
 class MappingNode(JSNode):
     """
@@ -189,6 +183,10 @@ class PyRESTNode(PyNode):
 class JSVisualNode(JSNode):
     size = 1
 
+@register_class
+class JS_D3Node(JSVisualNode):
+    pass
+    
 @register_class
 class JS_CanvasNode(JSVisualNode):
     pass

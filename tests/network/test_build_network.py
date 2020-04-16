@@ -26,18 +26,35 @@ def test_basic():
         'nodes': [
             {'id': 1, 'type': 'static_server_node', 'model': None },
             {'id': 2, 'type': 'file_node', 'model': None },
-            {'id': 3, 'type': 'js_client_node', 'model': {'y': 1}},
-            {'id': 4, 'type': 'mapping_table_node', 'model': {'y': 1}},
+            {'id': 3, 'type': 'js_client_node', 'model': None },
+            {'id': 4, 'type': 'mapping_table_node', 'model': None },
              # convert one table to a grouped table
-            {'id': 5, 'type': 'mapping_table_node', 'model': {'y': 1}}, 
-            {'id': 6, 'type': 'js_svg_node', 'model': {'y': 1}},
+            {'id': 5, 'type': 'mapping_table_node', 'model': None },
+
+            {'id': 10, 'type': 'mapping_lookup_node', 'model': { 'width': 200, 'height': 200 } },
+            
+            {'id': 6, 'type': 'js_svg_node', 'model': {
+                'tag': 'svg', 'attrs': { 'width': 'conf.width', 'height': 'conf.height' } } },
+            {'id': 7, 'type': 'js_svg_node', 'model': {
+                'tag': 'circle', 'attrs': { 'cx': 'x_scale($row[0])', 'cy': 'y_scale($row[1])', 'r': 4 } } },
+            {'id': 8, 'type': 'js_d3_node', 'model': { 'object': 'scaleLinear', 'range': [0, 'conf.width'] } },
+            {'id': 9, 'type': 'js_d3_node', 'model': { 'object': 'scaleLinear', 'range': [0, 'conf.height'] } },
         ],
         'edges': [
-            {'id1': 1, 'id2': 3, 'type': None, 'model': {'z': 1}, 'edge_meta': { 'child_id': 3 }},
+            {'id1': 1, 'id2': 3, 'type': None, 'model': None, 'edge_meta': { 'child_id': 3 }},
             {'id1': 1, 'id2': 2, 'type': None, 'model': None, 'edge_meta': None },
             {'id1': 2, 'id2': 4, 'type': None, 'model': None, 'edge_meta': None },
-            {'id1': 4, 'id2': 5, 'type': 'mapping_transform_edge', 'model': None, 'edge_meta': None },
-            {'id1': 5, 'id2': 6, 'type': None, 'model': None, 'edge_meta': None }
+            {'id1': 4, 'id2': 5, 'type': None, 'model': None, 'edge_meta': None },
+
+            # only needed for mapping data to something dynamic, everything else is just an object
+            {'id1': 5, 'id2': 6, 'type': 'mapping_edge', 'model': { }, 'edge_meta': None },
+
+            {'id1': 8, 'id2': 7, 'type': None, 'model': { 'names': { 8: 'x_scale' } }, 'edge_meta': None },
+            {'id1': 9, 'id2': 7, 'type': None, 'model': { 'names': { 9: 'y_scale' } }, 'edge_meta': None },
+
+            {'id1': 10, 'id2': 6, 'type': None, 'model': { 'names': { 10: 'conf' } }, 'edge_meta': None },
+            {'id1': 10, 'id2': 8, 'type': None, 'model': { 'names': { 10: 'conf' } }, 'edge_meta': None },
+            {'id1': 10, 'id2': 9, 'type': None, 'model': { 'names': { 10: 'conf' } }, 'edge_meta': None }
         ]
     })
 

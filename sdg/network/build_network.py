@@ -51,17 +51,17 @@ def build_network(network):
     # TODO: need the idea of a 'parent' node, either based on size or edge (or something else)
     # -> can then begin resolution from the parent, not necesssarily as a tree, but as a starting point
 
-    # edge_meta
-        
     # 3) resolve network into tree:
     # - respect edges
     # - avoid cycles
     # - avoid double resolution
     # - detect communication between languages (edges of a different language)
 
+    """
     for vs in language_roots.values():
         for nid in vs:
             for e in network.G.edges(nid):
                 print(e)
+    """
 
     #import pdb; pdb.set_trace()

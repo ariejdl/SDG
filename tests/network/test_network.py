@@ -101,22 +101,19 @@ def test_network():
     e = ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]
 
     assert e['model'] == {'z': 1}
-    assert e['edge_meta'] == None
 
     # test update edge 1
-    nw.update_edge(1, 2, model={ 'z': -1 }, edge_meta={ 'child_id': 2 })
+    nw.update_edge(1, 2, model={ 'z': -1 })
     ser = nw.serialize()
 
     e = ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]
     
     assert e['model'] == {'z': -1}
-    assert e['edge_meta'] == {'child_id': 2}
 
     # test update edge 2
-    nw.update_edge(1, 2, model={ 'z': -1 }, edge_meta=None)
+    nw.update_edge(1, 2, model={ 'z': -1 })
     ser = nw.serialize()
 
     e = ([e for e in ser['edges'] if e['id1'] == 1 and e['id2'] == 2])[0]
     
     assert e['model'] == {'z': -1}
-    assert e['edge_meta'] == None

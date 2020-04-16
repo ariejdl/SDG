@@ -41,7 +41,7 @@ class Network(object):
         self.G.add_node(id)
         self.nodes[id] = create_node(model=model, type=type)
 
-    def add_edge(self, id1=None, id2=None, model=None, type=None, edge_meta=None):
+    def add_edge(self, id1=None, id2=None, model=None, type=None):
         if id1 is None:
             id1 = self.genid()
         if id2 is None:
@@ -55,7 +55,7 @@ class Network(object):
             raise Exception('edge already in network')
         self.G.add_edge(*key)
         self.edges[key] = create_edge(
-            model=model, type=type, edge_meta=edge_meta)
+            model=model, type=type)
 
     def remove_node(self, id):
         if id not in self.nodes or id not in self.G.nodes:
@@ -76,13 +76,13 @@ class Network(object):
         current = self.nodes[id]
         current.deserialize(model)
 
-    def update_edge(self, id1, id2, model, edge_meta):
+    def update_edge(self, id1, id2, model):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
             raise Exception('edge\'s nodes not found in network')
         
         key = tuple(sorted([id1, id2]))
         current = self.edges[key]
-        current.deserialize(model, edge_meta)
+        current.deserialize(model)
         
     def deserialize(self, model):
         self.G = nx.Graph()

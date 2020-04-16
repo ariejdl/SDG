@@ -28,7 +28,7 @@ class Node(object):
     """
 
     # default values where they are not supplied
-    _model = {}
+    model = {}
     language = None
 
     # indicates scale from variable -> module/program
@@ -60,11 +60,11 @@ class Node(object):
         return {
             'id': id_,
             'type': self.node_name(),
-            'model': dict(self._model.items())
+            'model': dict(self.model.items())
         }
 
     def deserialize(self, model):
-        self._model = model
+        self.model = model
     
     def emit_code(self):
         raise NotImplementedError()
@@ -118,13 +118,13 @@ class WebServerNode(Node):
     size = 3
 
     # note this may come from config file node
-    _model = {
+    model = {
         'port': int
     }
 
 @register_class
 class NginxServerNode(WebServerNode):
-    _model = {
+    model = {
         'port': int,
         'config': None
     }
@@ -156,9 +156,13 @@ class LargeFileNode(Node):
     size = 2
     
 @register_class
-class StaticServerNode(Node):
+class StaticServerNode(WebServerNode):
     size = 3
-    
+
+@register_class
+class PyStaticServerNode(PyNode, StaticServerNode):
+    pass
+
 @register_class
 class PyFlaskServerNode(PyNode, WebServerNode):
     pass
@@ -171,7 +175,7 @@ class PyTornadoServerNode(PyNode, WebServerNode):
 class PyRESTNode(PyNode):
     size = 2
 
-    _model = {
+    model = {
         'route': str,
         'get': types.FunctionType,
         'post': types.FunctionType,

@@ -24,7 +24,7 @@ def test_basic():
 
     n = Network({
         'nodes': [
-            {'id': 1, 'type': 'static_server_node', 'model': { 'meta': { 'root_id': 1 }  } },
+            {'id': 1, 'type': 'py_static_server_node', 'model': { 'meta': { 'root_id': 1 }  } },
             {'id': 2, 'type': 'file_node', 'model': { 'meta': { 'root_id': 1 }  } },
             {'id': 3, 'type': 'js_client_node', 'model': { 'meta': { 'root_id': 3 }  } },
             {'id': 4, 'type': 'mapping_table_node', 'model': { 'meta': { 'root_id': 3 }  } },

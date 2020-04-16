@@ -18,7 +18,7 @@ def create_edge(model, type=None):
 
 class Edge(object):
 
-    _model = None
+    model = None
 
     def __init__(self, model):
         self.deserialize(model)
@@ -32,11 +32,11 @@ class Edge(object):
             'id1': id1_,
             'id2': id2_,
             'type': self.edge_name(),
-            'model': dict(self._model.items())
+            'model': dict(self.model.items())
         }
 
     def deserialize(self, model):
-        self._model = model
+        self.model = model
     
     def emit_code(self):
         raise NotImplementedError()

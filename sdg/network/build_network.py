@@ -9,15 +9,13 @@ from .utils import NetworkBuildException
 
 def resolve_partition(root, size_sorted, language, network):
 
-    #print(roots)
-
     # 3) resolve network into code (not necessarily a single tree):
     # - respect edges
     # - avoid cycles
     # - avoid double resolution
     # - detect communication between languages (edges of a different language)
-    # - [detect which things are static dependencies, and which are dynamic, e.g. sunject to user change]
-    #     [- ensure there are no loops in event propagation]
+    # - ** detect which things are static dependencies, and which are dynamic, e.g. sunject to user change
+    #     - ensure there are no cycles in event propagation (some cycles are ok, think about this situation)
 
     """
     for vs in language_roots.values():
@@ -39,7 +37,14 @@ def resolve_partition(root, size_sorted, language, network):
     """
     strategies?
 
-    - static server node: serve a given directory
+    - instrumented code, e.g. event on file download, event on file received
+    - static server node: serve a given directory, determine what is being served by looking at edges, may be empty!
+    - d3 nodes: object/chain
+    - svg nodes: automatically attach to parent/body
+    - fetch() - connection
+    - js client:
+      - html page(s)?
+      - appropriate handling of JS files and libraries
     """
 
 def build_network(network):

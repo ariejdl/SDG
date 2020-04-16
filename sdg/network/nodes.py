@@ -28,26 +28,21 @@ class Node(object):
     """
 
     # default values where they are not supplied
+    expected_model = {}
     model = {}
     language = None
 
     # indicates scale from variable -> module/program
     size = 0
 
-    # e.g. a DB query
-    _async = False
-
-    # for choosing between nodes during resolution, simpler is better
-    _complexity_estimate = None
-
     # other nodes which are created by this one if not in a part of its network
-    _node_implicit_dependencies = []
+    required_nodes = []
 
     # other nodes which cannot be part of its compilation/code-emission without some kind of separation
-    _node_mutual_exclusions = []
+    node_mutual_exclusions = []
 
     # language libraries
-    _library_dependencies = []
+    library_dependencies = []
 
     def __init__(self, model):
         self.deserialize(model)
@@ -121,13 +116,13 @@ class WebServerNode(Node):
     size = 3
 
     # note this may come from config file node
-    model = {
+    expected_model = {
         'port': int
     }
 
 @register_class
 class NginxServerNode(WebServerNode):
-    model = {
+    expected_model = {
         'port': int,
         'config': None
     }
@@ -139,17 +134,34 @@ class GeneralClientNode(Node):
 @register_class
 class JSClientNode(JSNode, GeneralClientNode):
     size = 3
+
+    expected_model = {
+        'html_uri': None,
+        'js_uris': None
+    }
+
+    def resolve(self):
+        super().resolve()
+
     
 @register_class
 class ConfigFileNode(Node):
     size = 1
 
 @register_class
+class URI_Node(Node):
+    size = 1
+    
+@register_class
 class FileNode(Node):
     """
     could be any type of file, e.g. csv/json
     """
     size = 2
+
+    expected_model = {
+        'path': None # optional
+    }
 
 @register_class
 class LargeFileNode(Node):
@@ -161,6 +173,10 @@ class LargeFileNode(Node):
 @register_class
 class StaticServerNode(WebServerNode):
     size = 3
+
+    expected_model = {
+        'directory': str
+    }
 
     def resolve(self):
         super().resolve()
@@ -182,7 +198,7 @@ class PyTornadoServerNode(PyNode, WebServerNode):
 class PyRESTNode(PyNode):
     size = 2
 
-    model = {
+    expected_model = {
         'route': str,
         'get': types.FunctionType,
         'post': types.FunctionType,
@@ -196,7 +212,12 @@ class JSVisualNode(JSNode):
 
 @register_class
 class JS_D3Node(JSVisualNode):
-    pass
+    size = 2
+
+    expected_model = {
+        'object': str,
+        'chain': dict
+    }
     
 @register_class
 class JS_CanvasNode(JSVisualNode):

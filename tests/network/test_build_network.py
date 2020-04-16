@@ -53,17 +53,19 @@ def test_basic():
             {'id': 8, 'type': 'js_d3_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'object': 'scaleLinear',
-                # how to initialise from model, e.g. with d3 method chaining?
-                # could use static analysis on this to extract 'data' and 'conf' (and 'd3')
-                'domain': ['d3.min(data, conf.x_accessor)', 'd3.max(data, conf.x_accessor)'],
-                'range': [0, 'conf.width'] } },
+                'chain': {
+                    'domain': ['d3.min(data, conf.x_accessor)', 'd3.max(data, conf.x_accessor)'],
+                    'range': [0, 'conf.width']                    
+                }
+            } },
             
             {'id': 9, 'type': 'js_d3_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'object': 'scaleLinear',
-                # how to initialise from model?
-                'domain': ['d3.min(data, conf.y_accessor)', 'd3.max(data, conf.y_accessor)'],
-                'range': [0, 'conf.height'] } },
+                'chain': {
+                    'domain': ['d3.min(data, conf.y_accessor)', 'd3.max(data, conf.y_accessor)'],
+                    'range': [0, 'conf.height']
+                }} },
         ],
         'edges': [
             {'id1': 1, 'id2': 3, 'type': None, 'model': None },

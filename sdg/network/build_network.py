@@ -5,7 +5,7 @@ import logging as log
 
 import networkx as nx
 
-from .utils import NetworkBuildException
+from .utils import NetworkBuildException, edge_key
 
 def resolve_partition(root, size_sorted, language, network):
 
@@ -31,19 +31,38 @@ def resolve_partition(root, size_sorted, language, network):
     files = {}
 
     sizes = sorted(size_sorted.keys())
+
+    # pass 1)
     for s in sizes:
         for nid in sorted(size_sorted[s]):
             n = network.nodes[nid]
-            print(n)
-
             neighbours = []
-
-            # TODO: do I need two passes here to extract e.g. implicit nodes, like document.body node for SVG?
             
             for node_id in network.G.neighbors(nid):
-                key = tuple(sorted([nid, node_id]))
+                key = edge_key(nid, node_id)
                 neighbours.append((network.nodes[node_id], network.edges[key]))
 
+            continue
+
+            # TODO:
+            # - do I need two passes here to extract e.g. implicit nodes, like document.body node for SVG?
+            #   ...and file nodes for html and js, linked to the URIs for JS_Client node...
+            #   ...specify a 'model' value through an edge....neighbour.model is the point
+            # - use the existing network, i.e. it modifies state?
+            ns, es = n.get_implicit_nodes_and_edges(neighbours)
+
+            print(n)
+
+    # pass 2)
+    for s in sizes:
+        for nid in sorted(size_sorted[s]):
+            n = network.nodes[nid]
+            neighbours = []
+            
+            for node_id in network.G.neighbors(nid):
+                key = edge_key(nid, node_id)
+                neighbours.append((network.nodes[node_id], network.edges[key]))
+    
             for code in n.resolve(nid):
                 if code.file_name is None:
                     errors.append(NetworkBuildException('no file specified for node', node_id=nid))

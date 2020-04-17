@@ -5,8 +5,7 @@ import networkx as nx
 from .nodes import create_node
 from .edges import create_edge
 from .build_network import build_network
-
-edge_key = lambda id1, id2: tuple(sorted([id1, id2]))
+from .utils import edge_key
 
 class Network(object):
     """

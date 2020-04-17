@@ -12,3 +12,6 @@ class NetworkBuildException(Exception):
   def __init__(self, node_id=None):
     super().__init__()
     self.node_id = node_id
+
+edge_key = lambda id1, id2: tuple(sorted([id1, id2]))
+

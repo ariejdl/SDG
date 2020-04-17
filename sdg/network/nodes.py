@@ -186,8 +186,8 @@ class JSClientNode(JSNode, GeneralClientNode):
         """
         provide default HTML and JS nodes if not provided
         """
-        out, errors = [], []
-
+        out, errors = super().get_implicit_nodes_and_edges(node_id, neighbours)
+        
         ns = self.get_neighbours(neighbours)
 
         html_count = len(ns.get('html', []))
@@ -230,16 +230,25 @@ class JSClientNode(JSNode, GeneralClientNode):
         html_node = ns['html'][0]
 
         if server_count == 1:
+            # TODO:
             pass
         elif server_count > 1:
             errors.append(NetworkBuildException(
                 'found ambiguous Server count, want 1 not {}'.format(js_count), node_id=node_id))
         
         self.expected_model
-        
+
         if self.model.get('html_uri') is None:
             pass
+        
+        if len(self.model.get('js_uris', [])) == 0:
+            # TODO: remove
+            self.model['js_uris'] = ['/x.js']
+            pass
             #out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name=self.default_html_path, content=""))
+
+        html_node.model.setdefault('javascripts', [])
+        html_node.model['javascripts'] += self.model['js_uris']
         
         return out, errs
         
@@ -271,8 +280,8 @@ class FileNode(Node):
 class HTML_Node(FileNode):
     
     expected_model = {
-        'javascript': [],
-        'style': []
+        'javascripts': [],
+        'stylesheets': []
     }
 
     def __init__(self, model):

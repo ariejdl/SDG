@@ -88,6 +88,9 @@ class Node(object):
     def emit_code(self):
         raise NotImplementedError()
 
+    def get_implicit_nodes_and_edges(self, node_id, neighbours):
+        return []
+
     def resolve(self, node_id):
         # return Code[]
         return []
@@ -165,6 +168,33 @@ class JSClientNode(JSNode, GeneralClientNode):
         'js_uris': list
     }
 
+    def get_implicit_nodes_and_edges(self, node_id, neighbours):
+        have_html = False
+        have_js = False
+        out = []
+
+        # might this cause problems if no other validation is done on neighbour to detect it?
+        # e.g. if only one appropriate neighbour, then this could be the correct approach...
+        # ...may need a specific edge... e.g. 'host' page
+        
+        for n, e in neighbours:
+            if type(n) is FileNode:
+                if n.model.get('mime_type') == 'text/html':
+                    have_html = True
+                if n.model.get('mime_type') == 'text/javascript':
+                    have_js = True
+
+        if not have_html:
+            # create_edge...
+            out.append(create_node({ 'mime_type': 'text/html' }, type='file_node'))
+            pass
+
+        
+        if not have_js:
+            pass
+            
+        return out
+
     def resolve(self, node_id):
         out = super().resolve(node_id)
         
@@ -202,7 +232,9 @@ class FileNode(Node):
     size = 2
 
     expected_model = {
-        'path': None # optional
+        'path': None, # optional
+        'content': None, # optional
+        'mime_type': None # optional
     }
 
 @register_class

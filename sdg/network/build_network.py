@@ -32,6 +32,8 @@ def resolve_partition(root, size_sorted, language, network):
 
     sizes = sorted(size_sorted.keys())
 
+    implicit_nodes_and_edges = []
+
     # pass 1)
     for s in sizes:
         for nid in sorted(size_sorted[s]):
@@ -42,16 +44,19 @@ def resolve_partition(root, size_sorted, language, network):
                 key = edge_key(nid, node_id)
                 neighbours.append((network.nodes[node_id], network.edges[key]))
 
-            continue
-
             # TODO:
             # - do I need two passes here to extract e.g. implicit nodes, like document.body node for SVG?
             #   ...and file nodes for html and js, linked to the URIs for JS_Client node...
             #   ...specify a 'model' value through an edge....neighbour.model is the point
             # - use the existing network, i.e. it modifies state?
-            ns, es = n.get_implicit_nodes_and_edges(neighbours)
+            implicit_nodes_and_edges += n.get_implicit_nodes_and_edges(nid, neighbours)
 
             print(n)
+
+    # now add the implicit nodes
+    # somehow avoid duplicates here, e.g. serialize all nodes, check that aren't the same (except node id), model+type
+    for n in implicit_nodes_and_edges:
+        pass
 
     # pass 2)
     for s in sizes:

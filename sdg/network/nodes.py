@@ -197,7 +197,7 @@ class JSClientNode(JSNode, GeneralClientNode):
             out.append((
                 create_node({ 'mime_type': MIME_TYPES.HTML,
                               'path': self.default_html_path },
-                            type='file_node'),
+                            type='html_node'),
                 create_edge({ })
             ))
         elif html_count > 1:
@@ -227,7 +227,7 @@ class JSClientNode(JSNode, GeneralClientNode):
         # check neighbours, get any web servers...determine uri of html/js assets...
 
         server_count = len(ns.get('server', []))
-        html_node = ns.get('html', [])
+        html_node = ns['html'][0]
 
         if server_count == 1:
             pass

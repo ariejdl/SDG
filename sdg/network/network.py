@@ -4,6 +4,8 @@ import networkx as nx
 
 from .build_network import build_network
 from .utils import edge_key, create_node, create_edge
+from .nodes import Node
+from .edges import Edge
 
 class Network(object):
     """
@@ -31,16 +33,24 @@ class Network(object):
         else:
             return 1
 
-    def add_node(self, id=None, model=None, type=None):
+    def add_node(self, id=None, node=None, model=None, type=None):
         if id is None:
             id = self.genid()
 
         if id in self.nodes or id in self.G.nodes:
             raise Exception('node already in network')
         self.G.add_node(id)
-        self.nodes[id] = create_node(model=model, type=type)
 
-    def add_edge(self, id1=None, id2=None, model=None, type=None):
+        if node is not None:
+            if not isinstance(node, Node):
+                raise ValueError('invalid type of node: {}'.format(node))
+            self.nodes[id] = node
+        else:
+            self.nodes[id] = create_node(model=model, type=type)
+        
+        return id
+
+    def add_edge(self, id1=None, id2=None, edge=None, model=None, type=None):
         if id1 is None:
             id1 = self.genid()
         if id2 is None:
@@ -50,11 +60,21 @@ class Network(object):
             raise Exception('edge\'s nodes not found in network')
         
         key = edge_key(id1, id2)
+        
         if key in self.edges or key in self.G.edges:
             raise Exception('edge already in network')
         self.G.add_edge(*key)
-        self.edges[key] = create_edge(
-            model=model, type=type)
+
+        if edge is not None:
+            if not isinstance(edge, Edge):
+                raise ValueError('invalid type of edge: {}'.format(node))
+            self.edges[key] = edge
+        else:
+            self.edges[key] = create_edge(
+                model=model, type=type)
+
+        return key
+            
 
     def remove_node(self, id):
         if id not in self.nodes or id not in self.G.nodes:

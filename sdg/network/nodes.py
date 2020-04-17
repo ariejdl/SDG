@@ -227,7 +227,7 @@ class JSClientNode(JSNode, GeneralClientNode):
         # check neighbours, get any web servers...determine uri of html/js assets...
 
         server_count = len(ns.get('server', []))
-        html_node = ns['html'][0]
+        html_node = ns.get('html', [])
 
         if server_count == 1:
             pass

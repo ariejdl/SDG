@@ -14,7 +14,7 @@ def resolve_partition(root, size_sorted, language, network):
     # - avoid cycles
     # - avoid double resolution
     # - detect communication between languages (edges of a different language)
-    # - ** detect which things are static dependencies, and which are dynamic, e.g. sunject to user change
+    # - ** detect which things are static dependencies, and which are dynamic, e.g. subject to user change
     #     - ensure there are no cycles in event propagation (some cycles are ok, think about this situation)
 
     """
@@ -26,13 +26,30 @@ def resolve_partition(root, size_sorted, language, network):
 
     print('\n')
 
+    info, warnings, errors = [], [], []
+
+    files = {}
+
     sizes = sorted(size_sorted.keys())
     for s in sizes:
-        for nid in size_sorted[s]:
+        for nid in sorted(size_sorted[s]):
             n = network.nodes[nid]
-            n.resolve()
             print(n)
-            #import pdb; pdb.set_trace()
+
+            neighbours = []
+
+            # TODO: do I need two passes here to extract e.g. implicit nodes, like document.body node for SVG?
+            
+            for node_id in network.G.neighbors(nid):
+                key = tuple(sorted([nid, node_id]))
+                neighbours.append((network.nodes[node_id], network.edges[key]))
+
+            for code in n.resolve(nid):
+                if code.file_name is None:
+                    errors.append(NetworkBuildException('no file specified for node', node_id=nid))
+                    continue
+                files.setdefault(code.file_name, [])
+                files[code.file_name].append(code)
 
     """
     strategies?
@@ -47,7 +64,11 @@ def resolve_partition(root, size_sorted, language, network):
       - appropriate handling of JS files and libraries
     """
 
+    return info, warnings, errors
+
 def build_network(network):
+
+    info, warnings, errors = [], [], []
 
     # 1) create temp directory
     if network.build_dir is None:
@@ -67,9 +88,12 @@ def build_network(network):
         language = node.language
         
         if root_id is None:
-            raise NetworkBuildException("node has no root id")
+            errors.append(NetworkBuildException("node has no root id", node_id=node_id))
+            continue
         if size is None:
-            raise NetworkBuildException("node has no size")
+            errors.append(NetworkBuildException("node has no size", node_id=node_id))
+            continue
+        
         roots.setdefault(root_id, { 'languages': set() })
         
         roots[root_id].setdefault(size, [])
@@ -82,11 +106,18 @@ def build_network(network):
 
         # validate that roots are all of same language or None
         if len(v['languages']) != 1:
-            raise NetworkBuildException("network partition has ambiguous number of languages: {}, {}".format(
-                len(v['languages']), list(v['languages'])))
+            errors.append(NetworkBuildException("network partition has ambiguous number of languages: {}, {}".format(
+                len(v['languages']), list(v['languages']))), node_id=k)
+            continue
         
         language = list(v['languages'])[0]
         del v['languages']
         
-        resolve_partition(k, v, language, network)
+        p_info, p_warnings, p_errors = resolve_partition(k, v, language, network)
+        
+        info += p_info
+        warnings += p_warnings
+        errors += p_errors
 
+
+    return info, warnings, errors

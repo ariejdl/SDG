@@ -6,6 +6,8 @@ from .nodes import create_node
 from .edges import create_edge
 from .build_network import build_network
 
+edge_key = lambda id1, id2: tuple(sorted([id1, id2]))
+
 class Network(object):
     """
     a graph/network of node types, does not need to be a connected network
@@ -50,7 +52,7 @@ class Network(object):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
             raise Exception('edge\'s nodes not found in network')
         
-        key = tuple(sorted([id1, id2]))
+        key = edge_key(id1, id2)
         if key in self.edges or key in self.G.edges:
             raise Exception('edge already in network')
         self.G.add_edge(*key)
@@ -66,7 +68,7 @@ class Network(object):
         self.G.remove_node(id)
 
     def remove_edge(self, id1, id2):
-        key = tuple(sorted([id1, id2]))
+        key = edge_key(id1, id2)
         if key not in self.edges or key not in self.G.edges:
             raise Exception('edge not found')
         self.G.remove_edge(*key)
@@ -80,7 +82,7 @@ class Network(object):
         if id1 not in self.G.nodes or id2 not in self.G.nodes:
             raise Exception('edge\'s nodes not found in network')
         
-        key = tuple(sorted([id1, id2]))
+        key = edge_key(id1, id2)
         current = self.edges[key]
         current.deserialize(model)
         
@@ -97,7 +99,7 @@ class Network(object):
             
         self.nodes = dict([(node['id'], create_node(
             node['model'], type=node['type'])) for node in model['nodes']])
-        self.edges = dict([((edge['id1'], edge['id2']),
+        self.edges = dict([(edge_key(edge['id1'], edge['id2']),
                             create_edge(edge['model'], type=edge['type']))
                            for edge in model['edges']])
 

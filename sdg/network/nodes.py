@@ -21,6 +21,30 @@ def create_node(model, type=None):
         raise Exception('invalid "type" specified: {}'.format(type))
     return C(model)
 
+JS_HELPERS = {
+    'function': '''({}) => {
+      {}
+    }''',
+    'body_load': '''document.addEventListener("DOMContentLoaded", function() {
+      {}
+    });
+    '''
+}
+
+class Code():
+    language = None # invalid
+    file_name = None # anon
+    content = None
+    has_symbol = False
+    node_id = None
+    
+    def __init__(self, **kwargs):
+        self.language = kwargs.get('language')
+        self.file_name = kwargs.get('file_name')
+        self.content = kwargs.get('content')
+        self.has_symbol = kwargs.get('has_symbol', False)
+        self.node_id = kwargs['node_id']
+
 class Node(object):
     """
     note that nodes will have different characteristics when "static" versus when "running", i.e. after
@@ -64,8 +88,9 @@ class Node(object):
     def emit_code(self):
         raise NotImplementedError()
 
-    def resolve(self):
-        pass
+    def resolve(self, node_id):
+        # return Code[]
+        return []
     
 
 class PyNode(Node):
@@ -136,12 +161,29 @@ class JSClientNode(JSNode, GeneralClientNode):
     size = 3
 
     expected_model = {
-        'html_uri': None,
-        'js_uris': None
+        'html_uri': str,
+        'js_uris': list
     }
 
-    def resolve(self):
-        super().resolve()
+    def resolve(self, node_id):
+        out = super().resolve(node_id)
+        
+        self.expected_model
+        if self.model.get('html_uri') is None:
+            out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name='index.html', content="""
+            <!html>
+              <html>
+                <head>
+                </head>
+              <body>
+              </body>
+            </html>
+            """))
+        
+        
+
+        return out
+        
 
     
 @register_class
@@ -178,8 +220,8 @@ class StaticServerNode(WebServerNode):
         'directory': str
     }
 
-    def resolve(self):
-        super().resolve()
+    def resolve(self, node_id):
+        return super().resolve(node_id)
 
 
 @register_class

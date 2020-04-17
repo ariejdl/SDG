@@ -7,4 +7,8 @@ def camel_to_snake(name):
   return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower().replace('__', '_')
 
 class NetworkBuildException(Exception):
-    pass
+  node_id = None
+  
+  def __init__(self, node_id=None):
+    super().__init__()
+    self.node_id = node_id

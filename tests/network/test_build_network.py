@@ -36,13 +36,15 @@ def test_basic():
                 'lookup': {
                     'width': 200,
                     'height': 200,
-                    'x_accessor': '(v) => v[0]', # could use static analysis on this
-                    'y_accessor': '(v) => v[1]',
+                    'x_accessor': '(v) => v[1]', # could use static analysis on this
+                    'y_accessor': '(v) => v[2]',
+                    'id_accessor': '(v) => v[0]'
                 } } },
             
             {'id': 6, 'type': 'js_svg_node', 'model': {
                 'meta': { 'root_id': 3 },
-                'tag': 'svg', 'attrs': { 'width': 'conf.width', 'height': 'conf.height' } } },
+                'tag': 'svg',
+                'attrs': { 'width': 'conf.width', 'height': 'conf.height' } } },
             
             {'id': 7, 'type': 'js_svg_node', 'model': {
                 'meta': { 'root_id': 3 },

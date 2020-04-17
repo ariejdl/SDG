@@ -2,8 +2,9 @@
 import pytest
 
 from sdg.network.network import Network
-from sdg.network.nodes import Node, create_node
-from sdg.network.edges import Edge, create_edge
+from sdg.network.utils import create_node, create_edge
+from sdg.network.nodes import Node
+from sdg.network.edges import Edge
 
 DEFAULT_TEST_NODE = 'py_rest_node'
 DEFAULT_TEST_EDGE = 'rest_edge'

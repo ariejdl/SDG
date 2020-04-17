@@ -1,35 +1,40 @@
 
 import json
-from .utils import camel_to_snake
+from .utils import (camel_to_snake, register_node,
+                    create_node, create_edge, NetworkBuildException)
 import types
 
-_classes = {}
-
-def register_class(cls):
-    nn = cls.node_name()
-    if nn in _classes:
-        raise Exception('class name already seen: {}'.format(nn))
-    _classes[nn] = cls
-    return cls
-
-def create_node(model, type=None):
-    """
-    factory for nodes, this is how deserialization is done
-    """
-    C = _classes.get(type)
-    if C is None:
-        raise Exception('invalid "type" specified: {}'.format(type))
-    return C(model)
-
-JS_HELPERS = {
-    'function': '''({}) => {
-      {}
+WEB_HELPERS = {
+    'js_function': '''({args}) => {
+      {body}
     }''',
-    'body_load': '''document.addEventListener("DOMContentLoaded", function() {
-      {}
+    'js_body_load': '''document.addEventListener("DOMContentLoaded", function() {
+      {body}
     });
-    '''
+    ''',
+    'html_page': '''<!html>
+              <html>
+                <head>
+                {head}
+                </head>
+              <body>
+                {body}
+              </body>
+            </html>'''
 }
+
+def get_neighbours(neighbours, tests):
+    out = {}
+    for n,e in neighbours:
+        for key, test in tests.items():
+            if test(n,e) == True:
+                out.setdefault(key, [])
+                out[key].append(n)
+    return out
+
+class MIME_TYPES(object):
+    HTML = 'text/html'
+    JS = 'text/javascript'
 
 class Code():
     language = None # invalid
@@ -51,7 +56,6 @@ class Node(object):
     code has been emitted and has started execution, rather than before code has even been emitted
     """
 
-    # default values where they are not supplied
     expected_model = {}
     model = {}
     language = None
@@ -89,11 +93,11 @@ class Node(object):
         raise NotImplementedError()
 
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
-        return []
+        return [], []
 
-    def resolve(self, node_id):
+    def resolve(self, node_id, neighbours):
         # return Code[]
-        return []
+        return [], []
     
 
 class PyNode(Node):
@@ -108,35 +112,35 @@ class MappingNode(JSNode):
     """
     size = 1
 
-@register_class
+@register_node
 class MappingScalarNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class MappingCoordinateSystemNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class MappingNetworkNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class MappingTableNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class MappingLookupNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class MappingTreeNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class MappingListNode(MappingNode):
     pass
 
-@register_class
+@register_node
 class GeneralServerNode(Node):
     size = 4
 
@@ -148,83 +152,108 @@ class WebServerNode(Node):
         'port': int
     }
 
-@register_class
+@register_node
 class NginxServerNode(WebServerNode):
     expected_model = {
         'port': int,
         'config': None
     }
     
-@register_class
+@register_node
 class GeneralClientNode(Node):
     size = 4
 
-@register_class
+@register_node
 class JSClientNode(JSNode, GeneralClientNode):
     size = 3
+
+    default_html_path = 'index.html'
+    default_js_path = 'main.js'
 
     expected_model = {
         'html_uri': str,
         'js_uris': list
     }
 
+    def get_neighbours(self, neighbours):
+        return get_neighbours(neighbours,
+                       { 'server': lambda n, e: type(n) is WebServerNode,
+                         'html': lambda n,e: type(n) is HTML_Node,
+                         'js': lambda n,e: type(n) is FileNode and n.model.get('mime_type') == MIME_TYPES.JS })
+        
+
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
-        have_html = False
-        have_js = False
-        out = []
+        """
+        provide default HTML and JS nodes if not provided
+        """
+        out, errors = [], []
 
-        # might this cause problems if no other validation is done on neighbour to detect it?
-        # e.g. if only one appropriate neighbour, then this could be the correct approach...
-        # ...may need a specific edge... e.g. 'host' page
+        ns = self.get_neighbours(neighbours)
+
+        html_count = len(ns.get('html', []))
+        js_count = len(ns.get('js', []))
         
-        for n, e in neighbours:
-            if type(n) is FileNode:
-                if n.model.get('mime_type') == 'text/html':
-                    have_html = True
-                if n.model.get('mime_type') == 'text/javascript':
-                    have_js = True
-
-        if not have_html:
-            # create_edge...
-            out.append(create_node({ 'mime_type': 'text/html' }, type='file_node'))
-            pass
-
+        if html_count == 0:
+            out.append((
+                create_node({ 'mime_type': MIME_TYPES.HTML,
+                              'path': self.default_html_path },
+                            type='file_node'),
+                create_edge({ })
+            ))
+        elif html_count > 1:
+            errors.append(NetworkBuildException(
+                'found ambiguous HTML node, want 1 not {}'.format(html_count), node_id=node_id))
         
-        if not have_js:
-            pass
+        if js_count == 0:
+            out.append((
+                create_node({ 'mime_type': MIME_TYPES.JS,
+                              'path': self.default_html_path },
+                            type='file_node'),
+                create_edge({ })
+            ))
+        elif js_count > 1:
+            errors.append(NetworkBuildException(
+                'found ambiguous JavaScript node, want 1 not {}'.format(js_count), node_id=node_id))
             
-        return out
+        return out, errors
 
-    def resolve(self, node_id):
-        out = super().resolve(node_id)
+    def resolve(self, node_id, neighbours):
+        """
+        derive paths of assets for client
+        """
+        out, errs = super().resolve(node_id, neighbours)
+
+        ns = self.get_neighbours(neighbours)
+        # check neighbours, get any web servers...determine uri of html/js assets...
+
+        server_count = len(ns.get('server', []))
+        html_node = ns['html'][0]
+
+        if server_count == 1:
+            pass
+        elif server_count > 1:
+            errors.append(NetworkBuildException(
+                'found ambiguous Server count, want 1 not {}'.format(js_count), node_id=node_id))
         
         self.expected_model
+        
         if self.model.get('html_uri') is None:
-            out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name='index.html', content="""
-            <!html>
-              <html>
-                <head>
-                </head>
-              <body>
-              </body>
-            </html>
-            """))
+            pass
+            #out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name=self.default_html_path, content=""))
         
-        
-
-        return out
+        return out, errs
         
 
     
-@register_class
+@register_node
 class ConfigFileNode(Node):
     size = 1
 
-@register_class
+@register_node
 class URI_Node(Node):
     size = 1
     
-@register_class
+@register_node
 class FileNode(Node):
     """
     could be any type of file, e.g. csv/json
@@ -237,14 +266,28 @@ class FileNode(Node):
         'mime_type': None # optional
     }
 
-@register_class
+
+@register_node
+class HTML_Node(FileNode):
+    
+    expected_model = {
+        'javascript': [],
+        'style': []
+    }
+
+    def __init__(self, model):
+        if model.get('mime_type') is None:
+            model['mime_type'] = MIME_TYPES.HTML
+        super().__init__(model)
+
+@register_node
 class LargeFileNode(Node):
     """
     could be any type of file, but noteworthy that it is large and can be treated differently
     """
     size = 2
     
-@register_class
+@register_node
 class StaticServerNode(WebServerNode):
     size = 3
 
@@ -252,23 +295,23 @@ class StaticServerNode(WebServerNode):
         'directory': str
     }
 
-    def resolve(self, node_id):
-        return super().resolve(node_id)
+    def resolve(self, node_id, neighbours):
+        return super().resolve(node_id, neighbours)
 
 
-@register_class
+@register_node
 class PyStaticServerNode(PyNode, StaticServerNode):
     pass
 
-@register_class
+@register_node
 class PyFlaskServerNode(PyNode, WebServerNode):
     pass
 
-@register_class
+@register_node
 class PyTornadoServerNode(PyNode, WebServerNode):
     pass
     
-@register_class
+@register_node
 class PyRESTNode(PyNode):
     size = 2
 
@@ -284,7 +327,7 @@ class PyRESTNode(PyNode):
 class JSVisualNode(JSNode):
     size = 1
 
-@register_class
+@register_node
 class JS_D3Node(JSVisualNode):
     size = 2
 
@@ -293,10 +336,10 @@ class JS_D3Node(JSVisualNode):
         'chain': dict
     }
     
-@register_class
+@register_node
 class JS_CanvasNode(JSVisualNode):
     pass
 
-@register_class
+@register_node
 class JS_SVGNode(JSVisualNode):
     pass

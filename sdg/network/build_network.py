@@ -49,12 +49,17 @@ def resolve_partition(root, size_sorted, language, network):
             #   ...and file nodes for html and js, linked to the URIs for JS_Client node...
             #   ...specify a 'model' value through an edge....neighbour.model is the point
             # - use the existing network, i.e. it modifies state?
-            implicit_nodes_and_edges += n.get_implicit_nodes_and_edges(nid, neighbours)
+
+            nes, errs = n.get_implicit_nodes_and_edges(nid, neighbours)
+
+            errors += errs
+            implicit_nodes_and_edges += nes
 
             print(n)
 
     # now add the implicit nodes
     # somehow avoid duplicates here, e.g. serialize all nodes, check that aren't the same (except node id), model+type
+    # ...since this modifies the network, may want to inform client...about additions
     for n in implicit_nodes_and_edges:
         pass
 
@@ -67,13 +72,20 @@ def resolve_partition(root, size_sorted, language, network):
             for node_id in network.G.neighbors(nid):
                 key = edge_key(nid, node_id)
                 neighbours.append((network.nodes[node_id], network.edges[key]))
-    
-            for code in n.resolve(nid):
+
+            all_code, errs = n.resolve(nid, neighbours)
+
+            errors += errs
+
+            # ...perhaps don't need a file name for code, can merge by language if blank?
+            """
+            for code in all_code:
                 if code.file_name is None:
                     errors.append(NetworkBuildException('no file specified for node', node_id=nid))
                     continue
                 files.setdefault(code.file_name, [])
                 files[code.file_name].append(code)
+            """
 
     """
     strategies?
@@ -130,7 +142,7 @@ def build_network(network):
 
         # validate that roots are all of same language or None
         if len(v['languages']) != 1:
-            errors.append(NetworkBuildException("network partition has ambiguous number of languages: {}, {}".format(
+            errors.append(NetworkBuildException("network partition has ambiguous number of languages, want one: {}, {}".format(
                 len(v['languages']), list(v['languages']))), node_id=k)
             continue
         

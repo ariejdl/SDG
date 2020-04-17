@@ -2,10 +2,8 @@
 import shutil
 import networkx as nx
 
-from .nodes import create_node
-from .edges import create_edge
 from .build_network import build_network
-from .utils import edge_key
+from .utils import edge_key, create_node, create_edge
 
 class Network(object):
     """

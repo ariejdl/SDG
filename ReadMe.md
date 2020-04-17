@@ -1,10 +1,12 @@
 # Read Me
 
+Save time in data-visualisation and software development, particular web software application development.  Influenced by the principles of visual basic, and popular approaches in data visualisation SDG tries to simplify programming.
+
 ## Development
 
 `pip install -e .`
 
-Longer term thoughts: would be nice to have server and client written in typescript could then share code on front-end and back-end.  For example could then generate code in client...drawback is not having nice Python libraries and easier syntax
+Longer term thought: the server is written in Python rather than Typescript partly because jupyter_client is in use.
 
 ## Tests
 
@@ -33,3 +35,7 @@ this needs:
   - emit code into temp directory
 - well specified 'run' step, i.e. start server, inform UI, want to be able to restart the UI and keep running this
   - subprocess with boilerplate to communicate asynchronously with this parent process
+
+#### Footnotes
+
+SDG: Soli Deo Gloria latin for "glory to God alone", a reformation maxim.

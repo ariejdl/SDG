@@ -1,20 +1,6 @@
 
 import json
-from .utils import camel_to_snake
-
-_classes = {}
-
-def register_class(cls):
-    _classes[cls.edge_name()] = cls    
-    return cls
-
-def create_edge(model, type=None):
-    C = _classes.get(type)
-    if type is not None and C is None:
-        raise Exception('invalid edge type given: {}'.format(type))
-    if C is None:
-        C = _classes['default_edge']
-    return C(model)
+from .utils import camel_to_snake, register_edge, create_edge
 
 class Edge(object):
 
@@ -45,15 +31,15 @@ class Edge(object):
         return []
     
 
-@register_class
+@register_edge
 class DefaultEdge(Edge):
     pass
 
-@register_class
+@register_edge
 class RESTEdge(Edge):
     pass
 
-@register_class
+@register_edge
 class MappingEdge(Edge):
     """
     this is the D3'esque mapping/binding of data to a visual

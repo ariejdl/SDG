@@ -38,4 +38,4 @@ this needs:
 
 #### Footnotes
 
-SDG: Soli Deo Gloria latin for "glory to God alone", a reformation maxim.
+SDG: Soli Deo Gloria latin for "glory to God alone", a reformation maxim.  "The fear of the Lord is the beginning of wisdom", Proverbs 9:10.

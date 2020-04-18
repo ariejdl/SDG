@@ -123,6 +123,8 @@ class JSNode(Node):
                 non_js.append((n, e))
 
         #print('***', non_js)
+
+        # TODO: finish
         
         out, errors = super().emit_code(node_id, neighbours)
         #raise NotImplementedError()

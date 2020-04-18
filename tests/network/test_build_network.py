@@ -80,6 +80,10 @@ def test_basic():
             # only needed for mapping data to something variable
             {'id1': 5, 'id2': 6, 'type': 'mapping_edge', 'model': { } },
 
+            # TODO: probably implement this with TNG-Hooks
+
+            # NB: this implies directionality...
+            # TODO: figure this out!
             {'id1': 8, 'id2': 7, 'type': None, 'model': { 'names': { 8: 'x_scale' } } },
             {'id1': 9, 'id2': 7, 'type': None, 'model': { 'names': { 9: 'y_scale' } } },
 

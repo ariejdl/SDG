@@ -308,6 +308,26 @@ class FileNode(Node):
         'mime_type': None # optional
     }
 
+    def resolve(self, node_id, neighbours):
+        out, errors = super().resolve(node_id, neighbours)
+
+        mime_type = self.model.get('mime_type')
+        if mime_type == MIME_TYPES.JS:
+            out.append(Code(
+                node_id=node_id,
+                has_symbol=False,
+                language='javascript',
+                file_name=self.model.get('path'),
+                content=None)
+            )
+        elif mime_type is not None:
+            errors.append(NetworkBuildException('file could not be resolved', node_id))
+        
+        return out, errors
+
+@register_node
+class PythonScript(FileNode):
+    language = 'python'
 
 @register_node
 class HTML_Node(FileNode):
@@ -324,16 +344,14 @@ class HTML_Node(FileNode):
 
 
     def resolve(self, node_id, neighbours):
-        out, errors = [], []
+        out, errors = super().resolve(node_id, neighbours)
 
-        print('***')
-        
         out.append(Code(
             node_id=node_id,
             has_symbol=False,
             language='html',
             file_name=self.model['path'],
-            content="")
+            content=None)
         )
         
         return out, errors

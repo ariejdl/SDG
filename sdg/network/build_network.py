@@ -28,7 +28,7 @@ def resolve_partition(root, size_sorted, language, network):
 
     info, warnings, errors = [], [], []
 
-    files = {}
+    all_code = []
 
     sizes = sorted(size_sorted.keys())
 
@@ -63,8 +63,14 @@ def resolve_partition(root, size_sorted, language, network):
 
     # now add the implicit nodes
     for n, node_id, edges in implicit_nodes_and_edges:
+        if n.size is None:
+            errors.append(NetworkBuildException("implicit node has no size", node_id=node_id))
+            continue
+        
         id = network.add_node(node=n)
         added_nodes.append(id)
+        size_sorted[n.size].append(id)
+
         for e in edges:
             key = network.add_edge(node_id, id, edge=e)
             added_edges.append(key)
@@ -75,8 +81,6 @@ def resolve_partition(root, size_sorted, language, network):
     if len(added_edges):
         info.append(('added edges', added_edges))
 
-    print(info)
-        
     # pass 2)
     for s in sizes:
         for nid in sorted(size_sorted[s]):
@@ -87,8 +91,9 @@ def resolve_partition(root, size_sorted, language, network):
                 key = edge_key(nid, node_id)
                 neighbours.append((network.nodes[node_id], network.edges[key]))
 
-            all_code, errs = n.resolve(nid, neighbours)
+            code, errs = n.resolve(nid, neighbours)
 
+            all_code += code
             errors += errs
 
             # ...perhaps don't need a file name for code, can merge by language if blank?
@@ -100,6 +105,8 @@ def resolve_partition(root, size_sorted, language, network):
                 files.setdefault(code.file_name, [])
                 files[code.file_name].append(code)
             """
+
+    print(all_code)
 
     """
     strategies?
@@ -133,9 +140,9 @@ def build_network(network):
     roots = {}
 
     for node_id, node in network.nodes.items():
-        size = node.size
         root_id = node.model.get('meta', {}).get('root_id')
         language = node.language
+        size = node.size
         
         if root_id is None:
             errors.append(NetworkBuildException("node has no root id", node_id=node_id))

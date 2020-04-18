@@ -5,15 +5,17 @@ from .utils import (camel_to_snake, register_node,
                     create_node, create_edge, NetworkBuildException)
 import types
 
-WEB_HELPERS = {
-    'js_function': '''({args}) => {
+class WEB_HELPERS(object):
+    js_function = '''({args}) => {
       {body}
-    }''',
-    'js_body_load': '''document.addEventListener("DOMContentLoaded", function() {
+    }'''
+    
+    js_body_load = '''document.addEventListener("DOMContentLoaded", function() {
       {body}
     });
-    ''',
-    'html_page': '''<!html>
+    '''
+    
+    html_page = '''<!html>
               <html>
                 <head>
                 {head}
@@ -22,7 +24,7 @@ WEB_HELPERS = {
                 {body}
               </body>
             </html>'''
-}
+
 
 def get_neighbours(neighbours, tests):
     out = {}
@@ -218,7 +220,7 @@ class JSClientNode(JSNode, GeneralClientNode):
         if js_count == 0:
 
             n = create_node({ 'mime_type': MIME_TYPES.JS,
-                              'path': self.default_html_path },
+                              'path': self.default_js_path },
                             type='file_node')
             e = create_edge({ })
 
@@ -346,12 +348,18 @@ class HTML_Node(FileNode):
     def resolve(self, node_id, neighbours):
         out, errors = super().resolve(node_id, neighbours)
 
+        js = ['<script src="{}"></script>'.format(js) for js in self.model.get('javascripts', [])]
+        css = ['<link rel="stylesheet" href="{}">'.format(css) for css in self.model.get('stylesheets', [])]
+
         out.append(Code(
             node_id=node_id,
             has_symbol=False,
             language='html',
             file_name=self.model['path'],
-            content=None)
+            content=WEB_HELPERS.html_page.format(
+                head='\n'.join(js + css),
+                body=""
+            ))
         )
         
         return out, errors

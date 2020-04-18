@@ -91,7 +91,7 @@ def resolve_partition(root, size_sorted, language, network):
                 key = edge_key(nid, node_id)
                 neighbours.append((network.nodes[node_id], network.edges[key]))
 
-            code, errs = n.resolve(nid, neighbours)
+            code, errs = n.emit_code(nid, neighbours)
 
             all_code += code
             errors += errs

@@ -6,13 +6,13 @@ from .utils import (camel_to_snake, register_node,
 import types
 
 class WEB_HELPERS(object):
-    js_function = '''({args}) => {
+    js_function = '''({args}) => {{
       {body}
-    }'''
+    }}'''
     
-    js_body_load = '''document.addEventListener("DOMContentLoaded", function() {
+    js_body_load = '''document.addEventListener("DOMContentLoaded", function() {{
       {body}
-    });
+    }});
     '''
     
     html_page = '''<!html>
@@ -78,6 +78,11 @@ class Node(object):
     def __init__(self, model):
         self.deserialize(model)
 
+    def __repr__(self):
+        rep = self.serialize(None)
+        del rep['id']
+        return json.dumps(rep)
+
     @classmethod
     def node_name(cls):
         return camel_to_snake(cls.__name__)
@@ -92,13 +97,10 @@ class Node(object):
     def deserialize(self, model):
         self.model = model
     
-    def emit_code(self):
-        raise NotImplementedError()
-
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
         return [], []
 
-    def resolve(self, node_id, neighbours):
+    def emit_code(self, node_id, neighbours):
         # return Code[]
         return [], []
     
@@ -108,6 +110,24 @@ class PyNode(Node):
 
 class JSNode(Node):
     language = 'javascript'
+
+    def emit_code(self, node_id, neighbours):
+
+        # check for cross language calls...
+
+        non_js = []
+        for n, e in neighbours:
+            language = n.language
+            if language != self.language:
+                print('---', self, language, n)
+                non_js.append((n, e))
+
+        #print('***', non_js)
+        
+        out, errors = super().emit_code(node_id, neighbours)
+        #raise NotImplementedError()
+        return out, errors
+    
 
 class MappingNode(JSNode):
     """
@@ -129,11 +149,43 @@ class MappingNetworkNode(MappingNode):
 
 @register_node
 class MappingTableNode(MappingNode):
-    pass
+
+    def emit_code(self, node_id, neighbours):
+        out, errors = super().emit_code(node_id, neighbours)
+        #raise NotImplementedError()
+        return out, errors
 
 @register_node
 class MappingLookupNode(MappingNode):
-    pass
+
+    expected_model = {
+        'lookup': dict
+    }
+    
+    def emit_code(self, node_id, neighbours):
+        out, errors = super().emit_code(node_id, neighbours)
+
+        parts = []
+
+        for k, v in self.model.get('lookup', {}).items():
+            if type(v) not in (str, int, float):
+                error.append(NetworkBuildException(
+                    'invalid type for lookup item: {}'.format(type(v)), node_id))
+                continue
+            parts.append('{}: {}'.format(k, v))
+
+        out.append(Code(
+            node_id=node_id,
+            has_symbol=True,
+            language=self.language,
+            file_name=None,
+            content="""{{
+              {}
+            }}""".format(',\n'.join(parts))
+        ))
+
+        return out, errors
+
 
 @register_node
 class MappingTreeNode(MappingNode):
@@ -170,7 +222,7 @@ class GeneralClientNode(Node):
     size = 4
 
 @register_node
-class JSClientNode(JSNode, GeneralClientNode):
+class JSClientNode(GeneralClientNode):
     size = 3
 
     default_html_path = 'index.html'
@@ -238,13 +290,13 @@ class JSClientNode(JSNode, GeneralClientNode):
             
         return out, errors
 
-    def resolve(self, node_id, neighbours):
+    def emit_code(self, node_id, neighbours):
         """
         derive paths of assets for client
 
         ...check neighbours, get any web servers...determine uri of html/js assets...
         """
-        out, errors = super().resolve(node_id, neighbours)
+        out, errors = super().emit_code(node_id, neighbours)
 
         ns = self.get_neighbours(neighbours)
 
@@ -310,8 +362,8 @@ class FileNode(Node):
         'mime_type': None # optional
     }
 
-    def resolve(self, node_id, neighbours):
-        out, errors = super().resolve(node_id, neighbours)
+    def emit_code(self, node_id, neighbours):
+        out, errors = super().emit_code(node_id, neighbours)
 
         mime_type = self.model.get('mime_type')
         if mime_type == MIME_TYPES.JS:
@@ -323,7 +375,7 @@ class FileNode(Node):
                 content=None)
             )
         elif mime_type is not None:
-            errors.append(NetworkBuildException('file could not be resolved', node_id))
+            errors.append(NetworkBuildException('file could not be emit_coded', node_id))
         
         return out, errors
 
@@ -345,8 +397,8 @@ class HTML_Node(FileNode):
         super().__init__(model)
 
 
-    def resolve(self, node_id, neighbours):
-        out, errors = super().resolve(node_id, neighbours)
+    def emit_code(self, node_id, neighbours):
+        out, errors = super().emit_code(node_id, neighbours)
 
         js = ['<script src="{}"></script>'.format(js) for js in self.model.get('javascripts', [])]
         css = ['<link rel="stylesheet" href="{}">'.format(css) for css in self.model.get('stylesheets', [])]
@@ -381,8 +433,8 @@ class StaticServerNode(WebServerNode):
         'directory': str
     }
 
-    def resolve(self, node_id, neighbours):
-        return super().resolve(node_id, neighbours)
+    def emit_code(self, node_id, neighbours):
+        return super().emit_code(node_id, neighbours)
 
 @register_node
 class PyStaticServerNode(PyNode, StaticServerNode):
@@ -427,6 +479,12 @@ class JS_D3Node(JSVisualNode):
         'object': str,
         'chain': dict
     }
+
+    def emit_code(self, node_id, neighbours):
+        out, errors = super().emit_code(node_id, neighbours)
+        #raise NotImplementedError()
+        return out, errors
+    
     
 @register_node
 class JS_CanvasNode(JSVisualNode):
@@ -434,4 +492,8 @@ class JS_CanvasNode(JSVisualNode):
 
 @register_node
 class JS_SVGNode(JSVisualNode):
-    pass
+    
+    def emit_code(self, node_id, neighbours):
+        out, errors = super().emit_code(node_id, neighbours)
+        #raise NotImplementedError()
+        return out, errors

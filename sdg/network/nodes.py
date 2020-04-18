@@ -38,7 +38,7 @@ class MIME_TYPES(object):
     JS = 'text/javascript'
 
 class Code():
-    language = None # invalid
+    language = None # required
     file_name = None # anon
     content = None
     has_symbol = False
@@ -199,26 +199,40 @@ class JSClientNode(JSNode, GeneralClientNode):
         js_count = len(ns.get('js', []))
         
         if html_count == 0:
-            out.append((
-                create_node({ 'mime_type': MIME_TYPES.HTML,
+
+            n = create_node({ 'mime_type': MIME_TYPES.HTML,
                               'path': self.default_html_path },
-                            type='html_node'),
-                create_edge({ })
-            ))
+                            type='html_node')
+            e = create_edge({ })
+
+            out.append((n, e))
+            ns2,es2 = n.get_implicit_nodes_and_edges(node_id, [(self, e)])
+
+            out += ns2
+            errors += es2
+            
         elif html_count > 1:
             errors.append(NetworkBuildException(
                 'found ambiguous HTML node, want 1 not {}'.format(html_count), node_id=node_id))
         
         if js_count == 0:
-            out.append((
-                create_node({ 'mime_type': MIME_TYPES.JS,
+
+            n = create_node({ 'mime_type': MIME_TYPES.JS,
                               'path': self.default_html_path },
-                            type='file_node'),
-                create_edge({ })
-            ))
+                            type='file_node')
+            e = create_edge({ })
+
+            out.append((n, e))
+            ns2,es2 = n.get_implicit_nodes_and_edges(node_id, [(self, e)])
+
+            out += ns2
+            errors += es2
+            
         elif js_count > 1:
             errors.append(NetworkBuildException(
                 'found ambiguous JavaScript node, want 1 not {}'.format(js_count), node_id=node_id))
+
+        
             
         return out, errors
 
@@ -310,8 +324,19 @@ class HTML_Node(FileNode):
 
 
     def resolve(self, node_id, neighbours):
-        #out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name=self.default_html_path, content=""))
-        return [], []
+        out, errors = [], []
+
+        print('***')
+        
+        out.append(Code(
+            node_id=node_id,
+            has_symbol=False,
+            language='html',
+            file_name=self.model['path'],
+            content="")
+        )
+        
+        return out, errors
 
 
 

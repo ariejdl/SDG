@@ -33,7 +33,8 @@ def resolve_partition(root, size_sorted, language, network):
     sizes = sorted(size_sorted.keys())
 
     implicit_nodes_and_edges = []
-    added_nodes_edges = []
+    added_nodes = []
+    added_edges = []
 
     # pass 1)
     for s in sizes:
@@ -47,24 +48,35 @@ def resolve_partition(root, size_sorted, language, network):
 
             nes, errs = n.get_implicit_nodes_and_edges(nid, neighbours)
 
+            # check uniqueness, if not unique add another edge
             for n, e in nes:
                 unique = True
-                for nid_, n_, e_ in implicit_nodes_and_edges:
+                for n_, nid_, edges in implicit_nodes_and_edges:
                     if n_.model == n.model and type(n_) == type(n):
                         unique = False
+                        edges.append(e)
+                        break
                 if unique:
-                    implicit_nodes_and_edges.append((nid, n, e))
+                    implicit_nodes_and_edges.append([n, nid, [e]])
 
             errors += errs
 
     # now add the implicit nodes
-    for node_id, n, e in implicit_nodes_and_edges:
+    for n, node_id, edges in implicit_nodes_and_edges:
         id = network.add_node(node=n)
-        key = network.add_edge(node_id, id, edge=e)
-        added_nodes_edges.append((id, key))
+        added_nodes.append(id)
+        for e in edges:
+            key = network.add_edge(node_id, id, edge=e)
+            added_edges.append(key)
 
-    info.append(('added nodes and edges', added_nodes_edges))
+    if len(added_nodes):
+        info.append(('added nodes', added_nodes))
 
+    if len(added_edges):
+        info.append(('added edges', added_edges))
+
+    print(info)
+        
     # pass 2)
     for s in sizes:
         for nid in sorted(size_sorted[s]):

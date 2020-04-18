@@ -1,4 +1,5 @@
 
+import os
 import json
 from .utils import (camel_to_snake, register_node,
                     create_node, create_edge, NetworkBuildException)
@@ -152,6 +153,9 @@ class WebServerNode(Node):
         'port': int
     }
 
+    def get_static_path(self, asset):
+        raise NotImplementedError()
+
 @register_node
 class NginxServerNode(WebServerNode):
     expected_model = {
@@ -177,9 +181,10 @@ class JSClientNode(JSNode, GeneralClientNode):
 
     def get_neighbours(self, neighbours):
         return get_neighbours(neighbours,
-                       { 'server': lambda n, e: type(n) is WebServerNode,
-                         'html': lambda n,e: type(n) is HTML_Node,
-                         'js': lambda n,e: type(n) is FileNode and n.model.get('mime_type') == MIME_TYPES.JS })
+                       { 'server': lambda n, e: isinstance(n, WebServerNode),
+                         'html': lambda n,e: isinstance(n, HTML_Node),
+                         'js': lambda n,e: (isinstance(n, FileNode) and
+                                            n.model.get('mime_type') == MIME_TYPES.JS) })
         
 
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
@@ -220,40 +225,54 @@ class JSClientNode(JSNode, GeneralClientNode):
     def resolve(self, node_id, neighbours):
         """
         derive paths of assets for client
+
+        ...check neighbours, get any web servers...determine uri of html/js assets...
         """
-        out, errs = super().resolve(node_id, neighbours)
+        out, errors = super().resolve(node_id, neighbours)
 
         ns = self.get_neighbours(neighbours)
-        # check neighbours, get any web servers...determine uri of html/js assets...
 
         server_count = len(ns.get('server', []))
         html_node = ns['html'][0]
+        js_nodes = ns['js']
+        server = None
 
         if server_count == 1:
-            # TODO:
-            pass
+            server = ns['server'][0]
         elif server_count > 1:
             errors.append(NetworkBuildException(
                 'found ambiguous Server count, want 1 not {}'.format(js_count), node_id=node_id))
-        
-        self.expected_model
 
+        # HTML URI
         if self.model.get('html_uri') is None:
-            pass
-        
+            if server is None:
+                errors.append(NetworkBuildException(
+                    'JS Client has no server specified, cannot get HTML path', node_id=node_id))
+            else:
+                try:
+                    self.model['html_uri'] = server.get_static_path(node_id, html_node.model['path'])
+                except NetworkBuildException as e:
+                    errors.append(e)
+
+        # JS URIS
         if len(self.model.get('js_uris', [])) == 0:
-            # TODO: remove
-            self.model['js_uris'] = ['/x.js']
-            pass
-            #out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name=self.default_html_path, content=""))
+            if server is None:
+                errors.append(NetworkBuildException(
+                    'JS Client has no server specified, cannot get JavaScript path', node_id=node_id))
+            else:
+                self.model.setdefault('js_uris', [])
+                for n in js_nodes:
+                    try:
+                        self.model['js_uris'].append(server.get_static_path(node_id, n.model['path']))
+                    except NetworkBuildException as e:
+                        errors.append(e)
 
         html_node.model.setdefault('javascripts', [])
-        html_node.model['javascripts'] += self.model['js_uris']
+        html_node.model['javascripts'] += self.model.get('js_uris', [])
         
-        return out, errs
-        
+        return out, errors
 
-    
+
 @register_node
 class ConfigFileNode(Node):
     size = 1
@@ -289,6 +308,13 @@ class HTML_Node(FileNode):
             model['mime_type'] = MIME_TYPES.HTML
         super().__init__(model)
 
+
+    def resolve(self, node_id, neighbours):
+        #out.append(Code(node_id=node_id, has_symbol=False, language='html', file_name=self.default_html_path, content=""))
+        return [], []
+
+
+
 @register_node
 class LargeFileNode(Node):
     """
@@ -307,10 +333,16 @@ class StaticServerNode(WebServerNode):
     def resolve(self, node_id, neighbours):
         return super().resolve(node_id, neighbours)
 
-
 @register_node
 class PyStaticServerNode(PyNode, StaticServerNode):
-    pass
+
+    def get_static_path(self, node_id, asset):
+        if asset is None:
+            raise NetworkBuildException('no asset specified', node_id=node_id)
+        if asset.startswith('/') or asset.startswith(os.sep):
+            raise NetworkBuildException('please use a relative file path', node_id=node_id)
+        return '/{}'.format(asset.replace(os.sep, '/'))
+
 
 @register_node
 class PyFlaskServerNode(PyNode, WebServerNode):
@@ -319,7 +351,7 @@ class PyFlaskServerNode(PyNode, WebServerNode):
 @register_node
 class PyTornadoServerNode(PyNode, WebServerNode):
     pass
-    
+
 @register_node
 class PyRESTNode(PyNode):
     size = 2

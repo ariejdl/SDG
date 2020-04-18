@@ -144,8 +144,10 @@ def build_network(network):
 
         # validate that roots are all of same language or None
         if len(v['languages']) != 1:
-            errors.append(NetworkBuildException("network partition has ambiguous number of languages, want one: {}, {}".format(
-                len(v['languages']), list(v['languages']))), node_id=k)
+            errors.append(NetworkBuildException(
+                "network partition has ambiguous number of languages, want one: {}, {}"
+                .format(len(v['languages']), list(v['languages'])), node_id=k))
+            
             continue
         
         language = list(v['languages'])[0]

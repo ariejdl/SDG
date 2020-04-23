@@ -31,8 +31,8 @@ const node_{sym}_callable = (networkInvocationId, {namedArgs}) => {{
 
     for (let i = 0; i < dependendents.length; i++) {{
       if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {{
-        const fn = _dependents[i]({{ ..._dependentArgs[i] }});
-        // if (isPromise) {{ ....then( fn ); }}
+        const res = _dependents[i]({{ ..._dependentArgs[i] }});
+        // if (isPromise) {{ res.then( fn ); }}
       }}
     }}
   }}

@@ -41,6 +41,37 @@ def test_neighbours(neighbours, tests):
                 out[key].append(n)
     return out
 
+def get_args(upstream):
+    errors, args = [], []
+    
+    for nid, n, e in upstream:
+        arg_name = e.model['meta'].get('name')
+        if arg_name is not None:
+            if not arg_name.startswith('$'):
+                errors.append(NetworkBuildException("edge name should begin with $", node_id))
+                continue
+            args.append(arg_name)
+        
+    return errors, args
+
+def get_upstream_downstream(node_id, neighbours):
+    upstream, downstream = [], []
+
+    for nid, n, e in neighbours:
+        if e.model is not None:
+            t_id = e.model.get('meta', {}).get('target_id')
+            if t_id is not None:
+                if t_id == node_id:
+                    upstream.append((nid, n, e))
+                elif t_id == nid:
+                    downstream.append((nid, n, e))
+                else:
+                    raise Exception('passed node/edge is not a neighbour')
+
+    return upstream, downstream
+
+
+
 class MIME_TYPES(object):
     HTML = 'text/html'
     JS = 'text/javascript'
@@ -80,22 +111,6 @@ class Node(object):
 
     # language libraries
     library_dependencies = []
-
-    def get_upstream_downstream(self, node_id, neighbours):
-        upstream, downstream = [], []
-
-        for nid, n, e in neighbours:
-            if e.model is not None:
-                t_id = e.model.get('meta', {}).get('target_id')
-                if t_id is not None:
-                    if t_id == node_id:
-                        upstream.append((nid, n, e))
-                    elif t_id == nid:
-                        downstream.append((nid, n, e))
-                    else:
-                        raise Exception('passed node/edge is not a neighbour')
-
-        return upstream, downstream
 
     def __init__(self, model):
         self.deserialize(model)
@@ -143,7 +158,7 @@ class JSNode(Node):
     def emit_code(self, node_id, network):
 
         neighbours = get_neighbours(node_id, network)
-        upstream, downstream = self.get_upstream_downstream(node_id, neighbours)
+        upstream, downstream = get_upstream_downstream(node_id, neighbours)
 
         non_js = []
         for nid, n, e in neighbours:
@@ -152,8 +167,6 @@ class JSNode(Node):
                 # TODO: cater for cross language calls...
                 non_js.append((nid, n, e))
 
-        # TODO: finish
-        
         out, errors = super().emit_code(node_id, network)
 
         template_args = {
@@ -168,33 +181,30 @@ class JSNode(Node):
             'dependentArgs': [] # the arguments supplied to a dependent
         }
         
-        # TODO: dependentArgs - need to check dependents dependencies...
-
-        args = []
+        errs, args = get_args(upstream)
+        errors += errs
 
         for nid, n, e in upstream:
             template_args['dependencies'].append('node_{sym}_data'.format(sym=nid))
-            arg_name = e.model['meta'].get('name')
-            if arg_name is not None:
-                if not arg_name.startswith('$'):
-                    errors.append(NetworkBuildException("edge name should begin with $", node_id))
-                    continue
-                args.append(arg_name)
 
         for nid, n, e in downstream:
             template_args['dependents'].append('node_{sym}_data'.format(sym=nid))
             template_args['dependentAllowNulls'].append(
                 'True' if n.model.get('allow_null_activation') == True else 'False')
+
+            upstream_, _ = get_upstream_downstream(nid, get_neighbours(nid, network))
+            errs, dep_args = get_args(upstream_)
+            if len(errs) == 0:
+                dep_args_str = '[{}]'.format(', '.join(sorted(dep_args)))
+                template_args['dependentArgs'].append(dep_args_str)
         
-        template_args['namedArgs'] = sorted(template_args['namedArgs'])
+        template_args['namedArgs'] = sorted(args)
 
         # convert list to string
         for k,v in template_args.items():
             if type(v) is list:
                 template_args[k] = ', '.join(template_args[k])
 
-        #import pdb; pdb.set_trace()
-                
         out.append(Code(
             node_id=node_id,
             has_symbol=False,
@@ -557,6 +567,18 @@ class JS_D3Node(JSVisualNode):
         'object': str,
         'methods': dict
     }
+
+    def make_body(self):
+        s = 'd3.{}'.format(self.model['object'])
+
+        ms = self.model.get('methods')
+        if ms is not None:
+            for k,v in ms.items():
+                if type(v) is not list:
+                    raise ValueError("expected list for argument")
+                s += '.{}({})\n'.format(k, ', '.join(map(str,v)))
+        
+        return s
 
     def emit_code(self, node_id, network):
         out, errors = super().emit_code(node_id, network)

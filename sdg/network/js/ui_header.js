@@ -20,13 +20,14 @@
 
 
 const maxRecursion = 50;
+let _networkInvocationId = 0;
 
 let _nodeDepencies = {};
 
 let _networkInvocations = {};
-function updateAndCheckCalls(networkInvocationId, callable) {
+function updateAndCheckCalls(_networkInvocationId, callable) {
   // check excessive recursion
-  let current = _networkInvocations[networkInvocationId];
+  let current = _networkInvocations[_networkInvocationId];
   if (current === undefined) {
     let obj = { _time: Date.now() };
     _networkInvocations[callable] = obj;

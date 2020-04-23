@@ -32,6 +32,13 @@ class WEB_HELPERS(object):
             </html>'''
 
 
+def make_fn_args(args):
+    out = ""
+    for arg in args:
+        out += ", "
+        out += str(arg)
+    return out
+    
 def test_neighbours(neighbours, tests):
     out = {}
     for nid, n, e in neighbours:
@@ -172,6 +179,7 @@ class JSNode(Node):
             language = n.language
             if language != self.language:
                 # TODO: cater for cross language calls...
+                # TODO: then invoke node after fetch
                 non_js.append((nid, n, e))
 
         out, errors = super().emit_code(node_id, network)
@@ -197,15 +205,22 @@ class JSNode(Node):
         for nid, n, e in downstream:
             template_args['dependents'].append('node_{sym}_data'.format(sym=nid))
             template_args['dependentAllowNulls'].append(
-                'True' if n.model.get('allow_null_activation') == True else 'False')
+                'true' if n.model.get('allow_null_activation') == True else 'false')
 
+            # TODO: not quite right
             upstream_, _ = get_upstream_downstream(nid, get_neighbours(nid, network))
             errs, dep_args = get_args(upstream_)
             if len(errs) == 0:
-                dep_args_str = '[{}]'.format(', '.join(sorted(dep_args)))
+                # sort by name, then get node ids
+                sorted_args = sorted(zip(dep_args, upstream_), key=lambda v: v[0])
+                fn_args = ['node_{sym}_data'.format(sym=v[1][0]) for v in sorted_args]
+                dep_args_str = '[networkInvocationId{}]'.format(make_fn_args(fn_args))
                 template_args['dependentArgs'].append(dep_args_str)
-        
-        template_args['namedArgs'] = sorted(args)
+            else:
+                errors.append(NetworkBuildError("dependent has invalid arguments", node_id))
+
+        # TODO: not quite right, empty args case
+        template_args['namedArgs'] = make_fn_args(sorted(args))
 
         # convert list to string
         for k,v in template_args.items():
@@ -583,7 +598,7 @@ class JS_D3Node(JSVisualNode):
             for k,v in ms.items():
                 if type(v) is not list:
                     raise ValueError("expected list for argument")
-                s += '.{}({})\n'.format(k, ', '.join(map(str,v)))
+                s += '.{}([{}])\n'.format(k, ', '.join(map(str,v)))
         
         return s
 

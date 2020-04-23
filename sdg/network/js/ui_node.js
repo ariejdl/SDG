@@ -1,5 +1,5 @@
 let node_{sym}_data = {initBody};
-const node_{sym}_callable = (networkInvocationId, {namedArgs}) => {{
+const node_{sym}_callable = (networkInvocationId{namedArgs}) => {{
   const _dependents = [{dependents}];
   const _dependentsAllowNulls = [{dependentAllowNulls}];
   const _dependentArgs = [{dependentArgs}];

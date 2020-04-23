@@ -7,7 +7,7 @@ from .utils import (camel_to_snake, register_node,
 import types
 
 class JS_TEMPLATES(object):
-    ui_header = open(os.path.join(os.path.dirname(__file__), 'js/ui_header.js')).read(),
+    ui_header = open(os.path.join(os.path.dirname(__file__), 'js/ui_header.js')).read()
     ui_node = open(os.path.join(os.path.dirname(__file__), 'js/ui_node.js')).read()
 
 

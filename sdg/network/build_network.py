@@ -6,6 +6,7 @@ import logging as log
 import networkx as nx
 
 from .utils import NetworkBuildException, edge_key, get_neighbours
+from .nodes import JS_TEMPLATES
 
 def resolve_partition(root, size_sorted, language, network):
 
@@ -104,9 +105,11 @@ def resolve_partition(root, size_sorted, language, network):
 
     return all_code, info, warnings, errors
 
-def make_code_file(pth, file_name, code):
+def make_code_file(pth, file_name, code, header):
     out_path = os.path.join(pth, file_name)
     with open(out_path, 'w') as f:
+        for c in header:
+            f.write(c)
         for c in code:
             if c.content is not None:
                 f.write(c.content)
@@ -126,9 +129,13 @@ def emit_code(pth, code):
             code_by_lang[c.language].append(c)
 
     for lang, code in code_by_lang.items():
+        header = []
+        if lang == 'javascript':
+            header = [JS_TEMPLATES.ui_header]
+        
         fs = files_by_lang.get(lang, [])
         if len(fs) == 1:
-            make_code_file(pth, fs[0], code)
+            make_code_file(pth, fs[0], code, header)
         else:
             raise Exception('ambiguous output files for code')
 

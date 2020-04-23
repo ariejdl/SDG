@@ -9,7 +9,7 @@ class WEB_HELPERS(object):
     js_function = '''({args}) => {{
       {body}
     }}'''
-    
+
     js_body_load = '''document.addEventListener("DOMContentLoaded", function() {{
       {body}
     }});

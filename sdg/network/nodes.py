@@ -90,6 +90,13 @@ class Code():
         self.has_symbol = kwargs.get('has_symbol', False)
         self.node_id = kwargs['node_id']
 
+    def __repr__(self):
+        obj = {}
+        for k in ['language', 'file_name', 'node_id', 'has_symbol']:
+            obj[k] = getattr(self, k)
+        return json.dumps(obj)
+
+
 class Node(object):
     """
     note that nodes will have different characteristics when "static" versus when "running", i.e. after

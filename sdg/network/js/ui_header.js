@@ -1,4 +1,24 @@
 
+// notes:
+// records dependencies of previous activation of node
+// _nodeDependencies[] = {{}}
+
+// record/track call stack so can prevent infinite loops, e.g. callStack.indexOf(node_sym_callback)...
+// e.g. callCount = {{}} // every _callbable is called with the current resolution_id...cull after one second, mark last call count Date.now()
+// e.g. callCount{{node_callbable}} += 1
+// e.g. check recursion depth and stop
+
+// what about async,throttling etc.?
+
+// interactive UI creation could be accomplished with
+// passing variables through network
+
+
+// - ... recipes are similar to this ...
+// - ... strongly desire to remove namespaces ... require $ prefix, thus $conf ... e.g. 'conf' ...
+//       - ... very hard to refactor dependents ... loose coupling ...
+
+
 const maxRecursion = 50;
 
 let _nodeDepencies = {};

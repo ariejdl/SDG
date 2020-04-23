@@ -88,16 +88,6 @@ def resolve_partition(root, size_sorted, language, network):
             all_code += code
             errors += errs
 
-            # ...perhaps don't need a file name for code, can merge by language if blank?
-            """
-            for code in all_code:
-                if code.file_name is None:
-                    errors.append(NetworkBuildException('no file specified for node', node_id=nid))
-                    continue
-                files.setdefault(code.file_name, [])
-                files[code.file_name].append(code)
-            """
-
     print(all_code)
 
     """
@@ -105,7 +95,6 @@ def resolve_partition(root, size_sorted, language, network):
 
     - instrumented code, e.g. event on file download, event on file received
     - static server node: serve a given directory, determine what is being served by looking at edges, may be empty!
-    - d3 nodes: object/chain
     - svg nodes: automatically attach to parent/body
     - fetch() - connection
     - js client:
@@ -113,7 +102,35 @@ def resolve_partition(root, size_sorted, language, network):
       - appropriate handling of JS files and libraries
     """
 
-    return info, warnings, errors
+    return all_code, info, warnings, errors
+
+def make_code_file(pth, file_name, code):
+    out_path = os.path.join(pth, file_name)
+    with open(out_path, 'w') as f:
+        for c in code:
+            if c.content is not None:
+                f.write(c.content)
+
+def emit_code(pth, code):
+    # ...perhaps don't need a file name for code, can merge by language if blank?
+    files_by_lang = {}
+    code_by_lang = {}
+
+    for c in code:
+        if c.language is not None:
+            if c.file_name is not None:
+                files_by_lang.setdefault(c.language, [])
+                files_by_lang[c.language].append(c.file_name)
+            
+            code_by_lang.setdefault(c.language, [])
+            code_by_lang[c.language].append(c)
+
+    for lang, code in code_by_lang.items():
+        fs = files_by_lang.get(lang, [])
+        if len(fs) == 1:
+            make_code_file(pth, fs[0], code)
+        else:
+            raise Exception('ambiguous output files for code')
 
 def build_network(network):
 
@@ -128,7 +145,7 @@ def build_network(network):
                         .format(network.build_dir, dir_))
         network.build_dir = dir_
 
-    # 2) partition network
+    # 2) partition network according to 'root_id'
     roots = {}
 
     for node_id, node in network.nodes.items():
@@ -164,11 +181,15 @@ def build_network(network):
         language = list(v['languages'])[0]
         del v['languages']
         
-        p_info, p_warnings, p_errors = resolve_partition(k, v, language, network)
+        code, p_info, p_warnings, p_errors = resolve_partition(k, v, language, network)
         
         info += p_info
         warnings += p_warnings
         errors += p_errors
 
+        root_id_build_dir = os.path.join(network.build_dir, 'root-{}'.format(k))
+        if not os.path.exists(root_id_build_dir):
+            os.mkdir(root_id_build_dir)
+            emit_code(root_id_build_dir, code)
 
     return info, warnings, errors

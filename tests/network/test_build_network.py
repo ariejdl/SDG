@@ -12,11 +12,18 @@ def setup_module():
     global _build_dir
     pth = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '_build'))
     _build_dir = pth
+
+    # TODO: remove
+    if os.path.exists(_build_dir):
+        shutil.rmtree(_build_dir)
+    
     if not os.path.exists(_build_dir):
         os.mkdir(_build_dir)
 
 def teardown_module():
-    shutil.rmtree(_build_dir)
+    # TODO: uncomment
+    #shutil.rmtree(_build_dir)
+    pass
 
 
 def test_basic():

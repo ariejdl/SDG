@@ -5,7 +5,7 @@ import logging as log
 
 import networkx as nx
 
-from .utils import NetworkBuildException, edge_key
+from .utils import NetworkBuildException, edge_key, get_neighbours
 
 def resolve_partition(root, size_sorted, language, network):
 
@@ -40,11 +40,7 @@ def resolve_partition(root, size_sorted, language, network):
     for s in sizes:
         for nid in sorted(size_sorted[s]):
             n = network.nodes[nid]
-            neighbours = []
-            
-            for node_id in network.G.neighbors(nid):
-                key = edge_key(nid, node_id)
-                neighbours.append((node_id, network.nodes[node_id], network.edges[key]))
+            neighbours = get_neighbours(nid, network)
 
             nes, errs = n.get_implicit_nodes_and_edges(nid, neighbours)
 
@@ -85,13 +81,9 @@ def resolve_partition(root, size_sorted, language, network):
     for s in sizes:
         for nid in sorted(size_sorted[s]):
             n = network.nodes[nid]
-            neighbours = []
-            
-            for node_id in network.G.neighbors(nid):
-                key = edge_key(nid, node_id)
-                neighbours.append((node_id, network.nodes[node_id], network.edges[key]))
+            neighbours = get_neighbours(nid, network)
 
-            code, errs = n.emit_code(nid, neighbours)
+            code, errs = n.emit_code(nid, network)
 
             all_code += code
             errors += errs

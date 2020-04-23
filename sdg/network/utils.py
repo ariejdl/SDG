@@ -46,3 +46,12 @@ class NetworkBuildException(Exception):
 
 edge_key = lambda id1, id2: tuple(sorted([id1, id2]))
 
+def get_neighbours(nid, network):
+    neighbours = []
+            
+    for node_id in network.G.neighbors(nid):
+        key = edge_key(nid, node_id)
+        neighbours.append((node_id, network.nodes[node_id], network.edges[key]))
+
+    return neighbours
+    

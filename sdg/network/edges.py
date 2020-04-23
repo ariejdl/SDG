@@ -2,7 +2,7 @@
 import json
 from .utils import camel_to_snake, register_edge, create_edge
 
-VALID_META_EDGE_KEYS = ['target_id']
+VALID_META_EDGE_KEYS = ['target_id', 'name']
 
 class Edge(object):
 

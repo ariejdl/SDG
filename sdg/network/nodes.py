@@ -2,8 +2,14 @@
 import os
 import json
 from .utils import (camel_to_snake, register_node,
-                    create_node, create_edge, NetworkBuildException)
+                    create_node, create_edge, NetworkBuildException,
+                    get_neighbours)
 import types
+
+class JS_TEMPLATES(object):
+    ui_header = open(os.path.join(os.path.dirname(__file__), 'js/ui_header.js')).read(),
+    ui_node = open(os.path.join(os.path.dirname(__file__), 'js/ui_node.js')).read()
+
 
 class WEB_HELPERS(object):
     js_function = '''({args}) => {{
@@ -26,9 +32,9 @@ class WEB_HELPERS(object):
             </html>'''
 
 
-def get_neighbours(neighbours, tests):
+def test_neighbours(neighbours, tests):
     out = {}
-    for nid, n,e in neighbours:
+    for nid, n, e in neighbours:
         for key, test in tests.items():
             if test(n,e) == True:
                 out.setdefault(key, [])
@@ -116,7 +122,7 @@ class Node(object):
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
         return [], []
 
-    def emit_code(self, node_id, neighbours):
+    def emit_code(self, node_id, network):
         # return Code[]
         return [], []
     
@@ -127,20 +133,16 @@ class PyNode(Node):
 class JSNode(Node):
     language = 'javascript'
 
-    template_args = [
-        'sym', # the unique node id
-        'initBody', # optional initialisation of content, defaults to null
-        'namedArgs', # named arguments passed through edge model's 'names'
-        'body', # the body of this node
-        
-        'dependents', # downstream symbols of node
-        'dependencies', # upstream symbols of node
-        'dependentAllowNulls', # downstream symbols that can be activated with null values
-        'dependentArgs' # the arguments supplied to a dependent
-    ]
+    expected_model = {
+        'allow_null_activation': bool
+    }
 
-    def emit_code(self, node_id, neighbours):
+    def make_body(self):
+        return 'null'
 
+    def emit_code(self, node_id, network):
+
+        neighbours = get_neighbours(node_id, network)
         upstream, downstream = self.get_upstream_downstream(node_id, neighbours)
 
         non_js = []
@@ -152,11 +154,55 @@ class JSNode(Node):
 
         # TODO: finish
         
-        out, errors = super().emit_code(node_id, neighbours)
+        out, errors = super().emit_code(node_id, network)
 
-        print('**', self.model, upstream, downstream)
+        template_args = {
+            'sym': node_id, # the unique node id
+            'initBody': 'null', # optional initialisation of content, defaults to null
+            'namedArgs': [], # named arguments passed through edge model's 'names'
+            'body': self.make_body(), # the body of this node
+            
+            'dependents': [], # downstream symbols of node
+            'dependencies': [], # upstream symbols of node
+            'dependentAllowNulls': [], # downstream symbols that can be activated with null values
+            'dependentArgs': [] # the arguments supplied to a dependent
+        }
         
-        #raise NotImplementedError()
+        # TODO: dependentArgs - need to check dependents dependencies...
+
+        args = []
+
+        for nid, n, e in upstream:
+            template_args['dependencies'].append('node_{sym}_data'.format(sym=nid))
+            arg_name = e.model['meta'].get('name')
+            if arg_name is not None:
+                if not arg_name.startswith('$'):
+                    errors.append(NetworkBuildException("edge name should begin with $", node_id))
+                    continue
+                args.append(arg_name)
+
+        for nid, n, e in downstream:
+            template_args['dependents'].append('node_{sym}_data'.format(sym=nid))
+            template_args['dependentAllowNulls'].append(
+                'True' if n.model.get('allow_null_activation') == True else 'False')
+        
+        template_args['namedArgs'] = sorted(template_args['namedArgs'])
+
+        # convert list to string
+        for k,v in template_args.items():
+            if type(v) is list:
+                template_args[k] = ', '.join(template_args[k])
+
+        #import pdb; pdb.set_trace()
+                
+        out.append(Code(
+            node_id=node_id,
+            has_symbol=False,
+            language=self.language,
+            file_name=None,
+            content=JS_TEMPLATES.ui_node.format(**template_args)
+        ))
+        
         return out, errors
     
 
@@ -181,8 +227,8 @@ class MappingNetworkNode(MappingNode):
 @register_node
 class MappingTableNode(MappingNode):
 
-    def emit_code(self, node_id, neighbours):
-        out, errors = super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
         #raise NotImplementedError()
         return out, errors
 
@@ -193,8 +239,8 @@ class MappingLookupNode(MappingNode):
         'lookup': dict
     }
     
-    def emit_code(self, node_id, neighbours):
-        out, errors = super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
 
         parts = []
 
@@ -264,8 +310,8 @@ class JSClientNode(GeneralClientNode):
         'js_uris': list
     }
 
-    def get_neighbours(self, neighbours):
-        return get_neighbours(neighbours,
+    def test_neighbours(self, neighbours):
+        return test_neighbours(neighbours,
                        { 'server': lambda n, e: isinstance(n, WebServerNode),
                          'html': lambda n,e: isinstance(n, HTML_Node),
                          'js': lambda n,e: (isinstance(n, FileNode) and
@@ -278,7 +324,7 @@ class JSClientNode(GeneralClientNode):
         """
         out, errors = super().get_implicit_nodes_and_edges(node_id, neighbours)
         
-        ns = self.get_neighbours(neighbours)
+        ns = self.test_neighbours(neighbours)
 
         html_count = len(ns.get('html', []))
         js_count = len(ns.get('js', []))
@@ -321,15 +367,16 @@ class JSClientNode(GeneralClientNode):
             
         return out, errors
 
-    def emit_code(self, node_id, neighbours):
+    def emit_code(self, node_id, network):
         """
         derive paths of assets for client
 
         ...check neighbours, get any web servers...determine uri of html/js assets...
         """
-        out, errors = super().emit_code(node_id, neighbours)
-
-        ns = self.get_neighbours(neighbours)
+        out, errors = super().emit_code(node_id, network)
+        
+        neighbours = get_neighbours(node_id, network)
+        ns = self.test_neighbours(neighbours)
 
         server_count = len(ns.get('server', []))
         html_node = ns['html'][0]
@@ -393,8 +440,8 @@ class FileNode(Node):
         'mime_type': None # optional
     }
 
-    def emit_code(self, node_id, neighbours):
-        out, errors = super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
 
         mime_type = self.model.get('mime_type')
         if mime_type == MIME_TYPES.JS:
@@ -428,8 +475,8 @@ class HTML_Node(FileNode):
         super().__init__(model)
 
 
-    def emit_code(self, node_id, neighbours):
-        out, errors = super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
 
         js = ['<script src="{}"></script>'.format(js) for js in self.model.get('javascripts', [])]
         css = ['<link rel="stylesheet" href="{}">'.format(css) for css in self.model.get('stylesheets', [])]
@@ -464,8 +511,8 @@ class StaticServerNode(WebServerNode):
         'directory': str
     }
 
-    def emit_code(self, node_id, neighbours):
-        return super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        return super().emit_code(node_id, network)
 
 @register_node
 class PyStaticServerNode(PyNode, StaticServerNode):
@@ -511,8 +558,8 @@ class JS_D3Node(JSVisualNode):
         'methods': dict
     }
 
-    def emit_code(self, node_id, neighbours):
-        out, errors = super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
         #raise NotImplementedError()
         return out, errors
     
@@ -524,7 +571,7 @@ class JS_CanvasNode(JSVisualNode):
 @register_node
 class DOM_SVGNode(Node):
     
-    def emit_code(self, node_id, neighbours):
-        out, errors = super().emit_code(node_id, neighbours)
+    def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
         #raise NotImplementedError()
         return out, errors

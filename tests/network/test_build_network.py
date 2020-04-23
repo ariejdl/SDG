@@ -91,19 +91,19 @@ def test_basic():
 
             # places where $conf is used
             {'id1': 10, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'names': { 10: '$conf' } } },
+                'meta': { 'target_id': 7, 'name': '$conf' } } },
             {'id1': 10, 'id2': 6, 'type': None, 'model': { 
-                'meta': { 'target_id': 6 }, 'names': { 10: '$conf' } } },
+                'meta': { 'target_id': 6, 'name': '$conf' } } },
             {'id1': 10, 'id2': 8, 'type': None, 'model': { 
-                'meta': { 'target_id': 8 }, 'names': { 10: '$conf' } } }, 
+                'meta': { 'target_id': 8, 'name': '$conf' } } },
             {'id1': 10, 'id2': 9, 'type': None, 'model': { 
-                'meta': { 'target_id': 9 }, 'names': { 10: '$conf' } } },
+                'meta': { 'target_id': 9, 'name': '$conf' } } },
 
             # places where data is used
             {'id1': 5, 'id2': 8, 'type': None, 'model': { 
-                'meta': { 'target_id': 8 }, 'names': { 5: '$data' } } }, 
+                'meta': { 'target_id': 8, 'name': '$data' } } },
             {'id1': 5, 'id2': 9, 'type': None, 'model': { 
-                'meta': { 'target_id': 9 }, 'names': { 5: '$data' } } }
+                'meta': { 'target_id': 9, 'name': '$data' } } }
         ]
     })
 

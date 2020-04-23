@@ -9,15 +9,14 @@
 
 // what about async,throttling etc.?
 
-// real time updates could be accomplished with
-// 1) passing variables through graph that are interactively updated
-// 2) cached compilation
+// interactive UI creation could be accomplished with
+// passing variables through network
 
 let node_{sym}_data = {initBody};
-const node_{sym}_callable = (network_invocation_id, {args}) => {
+const node_{sym}_callable = (network_invocation_id, {namedArgs}) => {
     const _dependents = {dependents};
     const _dependentsAllowNulls = {dependentAllowNulls};
-    const _childArgs = {childArgs};
+    const _dependentArgs = {dependentArgs};
 
     if (updateAndCheckCalls(network_invocation_id, node_{sym}_data)) {
         // in case there is too much recursion
@@ -31,8 +30,8 @@ const node_{sym}_callable = (network_invocation_id, {args}) => {
         node_{sym}_data = {body};
 
         for (let i = 0; i < dependendents.length; i++) {
-            if (_dependentsAllowNulls[i] || objNoNulls(childArgs[i])) {
-                const fn = _dependents[i]({ ..._childArgs[i] });
+            if (_dependentsAllowNulls[i] || objNoNulls(dependentArgs[i])) {
+                const fn = _dependents[i]({ ..._dependentArgs[i] });
                 // if (isPromise) { ....then( fn ); }
             }
         }

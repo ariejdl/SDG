@@ -44,32 +44,32 @@ def test_basic():
                     'id_accessor': '(v) => v[0]'
                 } } },
             
-            {'id': 6, 'type': 'js_svg_node', 'model': {
+            {'id': 6, 'type': 'dom_svg_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'tag': 'svg',
-                'attrs': { 'width': 'conf.width', 'height': 'conf.height' } } },
+                'attrs': { 'width': '$conf.width', 'height': '$conf.height' } } },
             
-            {'id': 7, 'type': 'js_svg_node', 'model': {
+            {'id': 7, 'type': 'dom_svg_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'tag': 'circle', 'attrs': {
-                    'cx': 'x_scale(conf.x_accessor($row))',
-                    'cy': 'y_scale(conf.y_accessor($row))', 'r': 4 } } },
+                    'cx': '$x_scale($conf.x_accessor($row))',
+                    'cy': '$y_scale($conf.y_accessor($row))', 'r': 4 } } },
             
             {'id': 8, 'type': 'js_d3_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'object': 'scaleLinear',
-                'chain': {
-                    'domain': ['d3.min(data, conf.x_accessor)', 'd3.max(data, conf.x_accessor)'],
-                    'range': [0, 'conf.width']                    
+                'methods': {
+                    'domain': ['d3.min($data, $conf.x_accessor)', 'd3.max($data, $conf.x_accessor)'],
+                    'range': [0, '$conf.width']                    
                 }
             } },
             
             {'id': 9, 'type': 'js_d3_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'object': 'scaleLinear',
-                'chain': {
-                    'domain': ['d3.min(data, conf.y_accessor)', 'd3.max(data, conf.y_accessor)'],
-                    'range': [0, 'conf.height']
+                'methods': {
+                    'domain': ['d3.min($data, $conf.y_accessor)', 'd3.max($data, $conf.y_accessor)'],
+                    'range': [0, '$conf.height']
                 }} },
         ],
         'edges': [
@@ -84,18 +84,26 @@ def test_basic():
 
             # NB: this implies directionality...
             # TODO: figure this out!
-            {'id1': 8, 'id2': 7, 'type': None, 'model': { 'names': { 8: 'x_scale' } } },
-            {'id1': 9, 'id2': 7, 'type': None, 'model': { 'names': { 9: 'y_scale' } } },
+            {'id1': 8, 'id2': 7, 'type': None, 'model': {
+                'meta': { 'target_id': 7 }, 'names': { 8: '$x_scale' } } },
+            {'id1': 9, 'id2': 7, 'type': None, 'model': {
+                'meta': { 'target_id': 7 }, 'names': { 9: '$y_scale' } } },
 
-            # places where conf is used
-            {'id1': 10, 'id2': 7, 'type': None, 'model': { 'names': { 10: 'conf' } } },
-            {'id1': 10, 'id2': 6, 'type': None, 'model': { 'names': { 10: 'conf' } } },
-            {'id1': 10, 'id2': 8, 'type': None, 'model': { 'names': { 10: 'conf' } } }, 
-            {'id1': 10, 'id2': 9, 'type': None, 'model': { 'names': { 10: 'conf' } } },
+            # places where $conf is used
+            {'id1': 10, 'id2': 7, 'type': None, 'model': {
+                'meta': { 'target_id': 7 }, 'names': { 10: '$conf' } } },
+            {'id1': 10, 'id2': 6, 'type': None, 'model': { 
+                'meta': { 'target_id': 6 }, 'names': { 10: '$conf' } } },
+            {'id1': 10, 'id2': 8, 'type': None, 'model': { 
+                'meta': { 'target_id': 8 }, 'names': { 10: '$conf' } } }, 
+            {'id1': 10, 'id2': 9, 'type': None, 'model': { 
+                'meta': { 'target_id': 9 }, 'names': { 10: '$conf' } } },
 
             # places where data is used
-            {'id1': 5, 'id2': 8, 'type': None, 'model': { 'names': { 5: 'data' } } }, 
-            {'id1': 5, 'id2': 9, 'type': None, 'model': { 'names': { 5: 'data' } } }
+            {'id1': 5, 'id2': 8, 'type': None, 'model': { 
+                'meta': { 'target_id': 8 }, 'names': { 5: '$data' } } }, 
+            {'id1': 5, 'id2': 9, 'type': None, 'model': { 
+                'meta': { 'target_id': 9 }, 'names': { 5: '$data' } } }
         ]
     })
 

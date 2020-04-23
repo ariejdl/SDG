@@ -2,6 +2,8 @@
 import json
 from .utils import camel_to_snake, register_edge, create_edge
 
+VALID_META_EDGE_KEYS = ['target_id']
+
 class Edge(object):
 
     model = None
@@ -22,6 +24,18 @@ class Edge(object):
         }
 
     def deserialize(self, model):
+
+        if model is not None:
+            # validate 'meta'
+            if model.get('meta') is not None:
+                if type(model['meta']) != dict:
+                    raise ValueError("meta must be a dictionary")
+                for k in model['meta'].keys():
+                    if k not in VALID_META_EDGE_KEYS:
+                        raise ValueError("meta must have keys among: {}".format(
+                            ', '.join(VALID_META_EDGE_KEYS)))
+            
+
         self.model = model
     
     def emit_code(self):

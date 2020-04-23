@@ -44,7 +44,7 @@ def resolve_partition(root, size_sorted, language, network):
             
             for node_id in network.G.neighbors(nid):
                 key = edge_key(nid, node_id)
-                neighbours.append((network.nodes[node_id], network.edges[key]))
+                neighbours.append((node_id, network.nodes[node_id], network.edges[key]))
 
             nes, errs = n.get_implicit_nodes_and_edges(nid, neighbours)
 
@@ -89,7 +89,7 @@ def resolve_partition(root, size_sorted, language, network):
             
             for node_id in network.G.neighbors(nid):
                 key = edge_key(nid, node_id)
-                neighbours.append((network.nodes[node_id], network.edges[key]))
+                neighbours.append((node_id, network.nodes[node_id], network.edges[key]))
 
             code, errs = n.emit_code(nid, neighbours)
 

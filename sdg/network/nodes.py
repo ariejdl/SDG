@@ -28,7 +28,7 @@ class WEB_HELPERS(object):
 
 def get_neighbours(neighbours, tests):
     out = {}
-    for n,e in neighbours:
+    for nid, n,e in neighbours:
         for key, test in tests.items():
             if test(n,e) == True:
                 out.setdefault(key, [])
@@ -75,6 +75,22 @@ class Node(object):
     # language libraries
     library_dependencies = []
 
+    def get_upstream_downstream(self, node_id, neighbours):
+        upstream, downstream = [], []
+
+        for nid, n, e in neighbours:
+            if e.model is not None:
+                t_id = e.model.get('meta', {}).get('target_id')
+                if t_id is not None:
+                    if t_id == node_id:
+                        upstream.append((nid, n, e))
+                    elif t_id == nid:
+                        downstream.append((nid, n, e))
+                    else:
+                        raise Exception('passed node/edge is not a neighbour')
+
+        return upstream, downstream
+
     def __init__(self, model):
         self.deserialize(model)
 
@@ -111,22 +127,35 @@ class PyNode(Node):
 class JSNode(Node):
     language = 'javascript'
 
+    template_args = [
+        'sym', # the unique node id
+        'initBody', # optional initialisation of content, defaults to null
+        'namedArgs', # named arguments passed through edge model's 'names'
+        'body', # the body of this node
+        
+        'dependents', # downstream symbols of node
+        'dependencies', # upstream symbols of node
+        'dependentAllowNulls', # downstream symbols that can be activated with null values
+        'dependentArgs' # the arguments supplied to a dependent
+    ]
+
     def emit_code(self, node_id, neighbours):
 
-        # check for cross language calls...
+        upstream, downstream = self.get_upstream_downstream(node_id, neighbours)
 
         non_js = []
-        for n, e in neighbours:
+        for nid, n, e in neighbours:
             language = n.language
             if language != self.language:
-                print('---', self, language, n)
-                non_js.append((n, e))
-
-        #print('***', non_js)
+                # TODO: cater for cross language calls...
+                non_js.append((nid, n, e))
 
         # TODO: finish
         
         out, errors = super().emit_code(node_id, neighbours)
+
+        print('**', self.model, upstream, downstream)
+        
         #raise NotImplementedError()
         return out, errors
     
@@ -479,7 +508,7 @@ class JS_D3Node(JSVisualNode):
 
     expected_model = {
         'object': str,
-        'chain': dict
+        'methods': dict
     }
 
     def emit_code(self, node_id, neighbours):
@@ -493,7 +522,7 @@ class JS_CanvasNode(JSVisualNode):
     pass
 
 @register_node
-class JS_SVGNode(JSVisualNode):
+class DOM_SVGNode(Node):
     
     def emit_code(self, node_id, neighbours):
         out, errors = super().emit_code(node_id, neighbours)

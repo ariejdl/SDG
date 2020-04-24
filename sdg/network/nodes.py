@@ -87,19 +87,17 @@ class Code():
     language = None # required
     file_name = None # anon
     content = None
-    has_symbol = False
     node_id = None
     
     def __init__(self, **kwargs):
         self.language = kwargs.get('language')
         self.file_name = kwargs.get('file_name')
         self.content = kwargs.get('content')
-        self.has_symbol = kwargs.get('has_symbol', False)
         self.node_id = kwargs['node_id']
 
     def __repr__(self):
         obj = {}
-        for k in ['language', 'file_name', 'node_id', 'has_symbol']:
+        for k in ['language', 'file_name', 'node_id']:
             obj[k] = getattr(self, k)
         return json.dumps(obj)
 
@@ -151,8 +149,10 @@ class Node(object):
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
         return [], []
 
+    def prepare_neighbours(self, node_id, network):
+        return [], []
+
     def emit_code(self, node_id, network):
-        # return Code[]
         return [], []
     
 
@@ -166,11 +166,10 @@ class JSNode(Node):
         'allow_null_activation': bool
     }
 
-    def make_body(self):
+    def make_body(self, node_id):
         return 'null'
 
     def emit_code(self, node_id, network):
-
         neighbours = get_neighbours(node_id, network)
         upstream, downstream = get_upstream_downstream(node_id, neighbours)
 
@@ -188,7 +187,7 @@ class JSNode(Node):
             'sym': node_id, # the unique node id
             'initBody': 'null', # optional initialisation of content, defaults to null
             'namedArgs': [], # named arguments passed through edge model's 'names'
-            'body': self.make_body(), # the body of this node
+            'body': self.make_body(node_id), # the body of this node
             
             'dependents': [], # downstream symbols of node
             'dependencies': [], # upstream symbols of node
@@ -229,7 +228,6 @@ class JSNode(Node):
 
         out.append(Code(
             node_id=node_id,
-            has_symbol=False,
             language=self.language,
             file_name=None,
             content=JS_TEMPLATES.ui_node.format(**template_args)
@@ -270,10 +268,8 @@ class MappingLookupNode(MappingNode):
     expected_model = {
         'lookup': dict
     }
-    
-    def emit_code(self, node_id, network):
-        out, errors = super().emit_code(node_id, network)
 
+    def make_body(self, node_id):
         parts = []
 
         for k, v in self.model.get('lookup', {}).items():
@@ -283,17 +279,10 @@ class MappingLookupNode(MappingNode):
                 continue
             parts.append('{}: {}'.format(k, v))
 
-        out.append(Code(
-            node_id=node_id,
-            has_symbol=True,
-            language=self.language,
-            file_name=None,
-            content="""{{
+        return """{{
               {}
             }}""".format(',\n'.join(parts))
-        ))
 
-        return out, errors
 
 
 @register_node
@@ -399,7 +388,7 @@ class JSClientNode(GeneralClientNode):
             
         return out, errors
 
-    def emit_code(self, node_id, network):
+    def prepare_neighbours(self, node_id, network):
         """
         derive paths of assets for client
 
@@ -479,13 +468,12 @@ class FileNode(Node):
         if mime_type == MIME_TYPES.JS:
             out.append(Code(
                 node_id=node_id,
-                has_symbol=False,
                 language='javascript',
                 file_name=self.model.get('path'),
                 content=None)
             )
-        elif mime_type is not None:
-            errors.append(NetworkBuildException('file could not be emit_coded', node_id))
+        else:
+            errors.append(NetworkBuildException('file could not be resolved: {}'.format(mime_type), node_id))
         
         return out, errors
 
@@ -515,7 +503,6 @@ class HTML_Node(FileNode):
 
         out.append(Code(
             node_id=node_id,
-            has_symbol=False,
             language='html',
             file_name=self.model['path'],
             content=WEB_HELPERS.html_page.format(
@@ -554,7 +541,7 @@ class PyStaticServerNode(PyNode, StaticServerNode):
             raise NetworkBuildException('no asset specified', node_id=node_id)
         if asset.startswith('/') or asset.startswith(os.sep):
             raise NetworkBuildException('please use a relative file path', node_id=node_id)
-        return '/{}'.format(asset.replace(os.sep, '/'))
+        return '{}'.format(asset.replace(os.sep, '/'))
 
 
 @register_node
@@ -590,7 +577,7 @@ class JS_D3Node(JSVisualNode):
         'methods': dict
     }
 
-    def make_body(self):
+    def make_body(self, node_id):
         s = 'd3.{}'.format(self.model['object'])
 
         ms = self.model.get('methods')

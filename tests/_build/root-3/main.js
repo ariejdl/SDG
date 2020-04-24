@@ -119,9 +119,11 @@ const node_5_callable = (networkInvocationId) => {
   if (allowCallAndChanged(_nodeDepencies['node_5_callable'], [])) {
     _nodeDepencies['node_5_callable'] = [];
 
+    console.log('calling node 5');
+
     node_5_data = null;
 
-    for (let i = 0; i < dependendents.length; i++) {
+    for (let i = 0; i < _dependents.length; i++) {
       if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {
         const res = _dependents[i]({ ..._dependentArgs[i] });
         // if (isPromise) { res.then( fn ); }
@@ -144,9 +146,17 @@ const node_10_callable = (networkInvocationId) => {
   if (allowCallAndChanged(_nodeDepencies['node_10_callable'], [])) {
     _nodeDepencies['node_10_callable'] = [];
 
-    node_10_data = null;
+    console.log('calling node 10');
 
-    for (let i = 0; i < dependendents.length; i++) {
+    node_10_data = {
+              width: 200,
+height: 200,
+x_accessor: (v) => v[1],
+y_accessor: (v) => v[2],
+id_accessor: (v) => v[0]
+            };
+
+    for (let i = 0; i < _dependents.length; i++) {
       if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {
         const res = _dependents[i]({ ..._dependentArgs[i] });
         // if (isPromise) { res.then( fn ); }
@@ -154,13 +164,7 @@ const node_10_callable = (networkInvocationId) => {
     }
   }
 }
-{
-              width: 200,
-height: 200,
-x_accessor: (v) => v[1],
-y_accessor: (v) => v[2],
-id_accessor: (v) => v[0]
-            }let node_8_data = null;
+let node_8_data = null;
 const node_8_callable = (networkInvocationId, $conf, $data) => {
   const _dependents = [node_7_data];
   const _dependentsAllowNulls = [false];
@@ -175,11 +179,13 @@ const node_8_callable = (networkInvocationId, $conf, $data) => {
   if (allowCallAndChanged(_nodeDepencies['node_8_callable'], [node_10_data, node_5_data])) {
     _nodeDepencies['node_8_callable'] = [node_10_data, node_5_data];
 
+    console.log('calling node 8');
+
     node_8_data = d3.scaleLinear.domain([d3.min($data, $conf.x_accessor), d3.max($data, $conf.x_accessor)])
 .range([0, $conf.width])
 ;
 
-    for (let i = 0; i < dependendents.length; i++) {
+    for (let i = 0; i < _dependents.length; i++) {
       if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {
         const res = _dependents[i]({ ..._dependentArgs[i] });
         // if (isPromise) { res.then( fn ); }
@@ -202,11 +208,13 @@ const node_9_callable = (networkInvocationId, $conf, $data) => {
   if (allowCallAndChanged(_nodeDepencies['node_9_callable'], [node_10_data, node_5_data])) {
     _nodeDepencies['node_9_callable'] = [node_10_data, node_5_data];
 
+    console.log('calling node 9');
+
     node_9_data = d3.scaleLinear.domain([d3.min($data, $conf.y_accessor), d3.max($data, $conf.y_accessor)])
 .range([0, $conf.height])
 ;
 
-    for (let i = 0; i < dependendents.length; i++) {
+    for (let i = 0; i < _dependents.length; i++) {
       if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {
         const res = _dependents[i]({ ..._dependentArgs[i] });
         // if (isPromise) { res.then( fn ); }

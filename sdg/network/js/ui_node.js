@@ -13,9 +13,11 @@ const node_{sym}_callable = (networkInvocationId{namedArgs}) => {{
   if (allowCallAndChanged(_nodeDepencies['node_{sym}_callable'], [{dependencies}])) {{
     _nodeDepencies['node_{sym}_callable'] = [{dependencies}];
 
+    console.log('calling node {sym}');
+
     node_{sym}_data = {body};
 
-    for (let i = 0; i < dependendents.length; i++) {{
+    for (let i = 0; i < _dependents.length; i++) {{
       if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {{
         const res = _dependents[i]({{ ..._dependentArgs[i] }});
         // if (isPromise) {{ res.then( fn ); }}

@@ -82,13 +82,18 @@ def resolve_partition(root, size_sorted, language, network):
     for s in sizes:
         for nid in sorted(size_sorted[s]):
             n = network.nodes[nid]
-            neighbours = get_neighbours(nid, network)
-
-            code, errs = n.emit_code(nid, network)
-
+            code, errs = n.prepare_neighbours(nid, network)
             all_code += code
             errors += errs
 
+    # pass 3)
+    for s in sizes:
+        for nid in sorted(size_sorted[s]):
+            n = network.nodes[nid]
+            code, errs = n.emit_code(nid, network)
+            all_code += code
+            errors += errs
+            
     print(all_code)
 
     """

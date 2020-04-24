@@ -821,9 +821,12 @@ class JS_CanvasNode(JSVisualNode):
     pass
 
 @register_node
-class DOM_SVGNode(Node):
+class DOM_SVGNode(JSNode):
     
     def emit_code(self, node_id, network):
         # TODO:
+        # - check if attached to dom from neighbours
+        # - if not in initialisation find dom and attach to it
+        
         out, errors = super().emit_code(node_id, network)
         return out, errors

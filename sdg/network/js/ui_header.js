@@ -1,6 +1,7 @@
 
 // ...what about async,throttling etc.?
 // ...interactive UI creation could be accomplished with passing variables through network
+//     ... also individual node resolution/creation from client -> server -> client, i.e. not whole network
 // ... recipes are similar to this ...
 
 const maxRecursion = 50;

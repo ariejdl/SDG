@@ -91,9 +91,11 @@ def test_basic():
             
             {'id': 7, 'type': 'dom_svg_node', 'model': {
                 'meta': { 'root_id': 3 },
-                'tag': 'circle', 'attrs': {
+                'tag': 'circle',
+                'attrs': {
                     'cx': '$x_scale($conf.x_accessor($row))',
-                    'cy': '$y_scale($conf.y_accessor($row))', 'r': 4 } } },
+                    'cy': '$y_scale($conf.y_accessor($row))',
+                    'r': 4 } } },
             
             {'id': 8, 'type': 'js_d3_node', 'model': {
                 'meta': { 'root_id': 3 },
@@ -118,12 +120,10 @@ def test_basic():
             {'id1': 2, 'id2': 5, 'type': None, 'model': None },
 
             # only needed for mapping data to something variable
-            {'id1': 5, 'id2': 6, 'type': 'mapping_edge', 'model': { } },
-
-            # TODO: probably implement this with TNG-Hooks
-
-            # NB: this implies directionality...
-            # TODO: figure this out!
+            {'id1': 5, 'id2': 7, 'type': 'mapping_edge', 'model': { } },
+            
+            {'id1': 6, 'id2': 7, 'type': None, 'model': {
+                'meta': { 'target_id': 7 }, 'names': { 8: '$svg' } } },
             {'id1': 8, 'id2': 7, 'type': None, 'model': {
                 'meta': { 'target_id': 7 }, 'names': { 8: '$x_scale' } } },
             {'id1': 9, 'id2': 7, 'type': None, 'model': {

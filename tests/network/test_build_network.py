@@ -32,10 +32,11 @@ def setup_module():
     _test_data = os.path.join(_build_dir, "test_data.csv")
 
     with open(_test_data, 'w') as f:
-        f.write("a,b,c\n")
+        f.write("id,x,y\n")
         f.write("1,2,3\n")
-        f.write("4,5,6\n")
-        f.write("7,8,9")
+        f.write("2,5,6\n")
+        f.write("3,8,9")
+        f.write("4,4,10")
 
 def _teardown():
     global _build_dir
@@ -69,17 +70,18 @@ def test_basic():
             }, },
             
             {'id': 3, 'type': 'js_client_node', 'model': { 'meta': { 'root_id': 3 }  } },
-             # convert one table to a grouped table
+
             {'id': 5, 'type': 'mapping_table_node', 'model': { 'meta': { 'root_id': 3 }  } },
 
             {'id': 10, 'type': 'mapping_lookup_node', 'model': {
                 'meta': { 'root_id': 3 },
+                'is_static': True,
                 'lookup': {
                     'width': 200,
                     'height': 200,
-                    'x_accessor': '(v) => v[1]', # could use static analysis on this
-                    'y_accessor': '(v) => v[2]',
-                    'id_accessor': '(v) => v[0]'
+                    'x_accessor': '(v) => v.x', # could use static analysis on this
+                    'y_accessor': '(v) => v.y',
+                    'id_accessor': '(v) => v.id'
                 } } },
             
             {'id': 6, 'type': 'dom_svg_node', 'model': {

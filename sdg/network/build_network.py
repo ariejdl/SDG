@@ -133,7 +133,7 @@ def emit_code(pth, code):
     for lang, code in code_by_lang.items():
         header = []
         if lang == 'javascript':
-            header = [JS_TEMPLATES.ui_header]
+            header = [JS_TEMPLATES.ui_header, JS_TEMPLATES.ui_d3()]
         
         fs = files_by_lang.get(lang, [])
         if len(fs) == 1:

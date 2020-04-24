@@ -13,7 +13,7 @@ function invokeNode(nodeId) {
   // need args/deps and invocation id
   let name = `node_${nodeId}`;
   if (name in _nodeRegistry) {
-    _nodeRegistry[name].invoke(_networkInvocationId++);
+    _nodeRegistry[name].invoke(++_networkInvocationId);
   } else {
     throw `node ${name} not found`;
   }
@@ -117,12 +117,18 @@ class Node {
     this.dependentsAllowNulls = dependentsAllowNulls;
     this.dependentArgs = dependentArgs;
     
-    this.data = initBody;
+    initBody.call(this);
 
     _nodeRegistry[this.callableId] = this;
   }
 
+  setData(data) {
+    this.data = data;
+  }
+
   invoke(networkInvocationId) {
+
+    console.log('start invoke ' + this.callableId);
 
     if (updateAndCheckCalls(networkInvocationId, this.callableId)) {
       // in case there is too much recursion
@@ -133,6 +139,9 @@ class Node {
     if (allowCallAndChanged(_nodeDepencies[this.callableId], updatedDependencies)) {
       _nodeDepencies[this.callableId] = updatedDependencies;
 
+      console.log('invoke body ' + this.callableId);
+      //debugger;
+
       // update
       this.invokeFn(networkInvocationId, ...updatedDependencies);
 
@@ -142,7 +151,7 @@ class Node {
       
       for (let i = 0; i < dependents.length; i++) {
         if (this.dependentsAllowNulls[i] || arrayNoNulls(dependentArgs[i])) {
-          const res = _dependents[i]( ...dependentArgs[i] );
+          const res = dependents[i].invoke(networkInvocationId);
           // if (isPromise) {{ res.then( fn ); }}
         }
       }

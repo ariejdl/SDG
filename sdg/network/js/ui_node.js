@@ -6,9 +6,11 @@ const node_{sym} = new Node(
   [{dependentAllowNulls}],
   () => [{dependentArgs}],
 
-  {initBody},
+  function () {{
+    {initBody}
+  }},
   
-  (networkInvocationId{namedArgs}) => {{
-    this.data = {body};
+  function (networkInvocationId{namedArgs}) {{
+    {body};
   }}
 )

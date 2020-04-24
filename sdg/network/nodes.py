@@ -2,6 +2,7 @@
 import os
 import json
 from shutil import copyfile
+from functools import lru_cache
 
 from .utils import (camel_to_snake, register_node,
                     create_node, create_edge, NetworkBuildException,
@@ -11,7 +12,11 @@ import types
 class JS_TEMPLATES(object):
     ui_header = open(os.path.join(os.path.dirname(__file__), 'js/ui_header.js')).read()
     ui_node = open(os.path.join(os.path.dirname(__file__), 'js/ui_node.js')).read()
-    ui_network_fetch = open(os.path.join(os.path.dirname(__file__), 'js/ui_network_fetch.js')).read()
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def ui_d3(cls):
+        return open(os.path.join(os.path.dirname(__file__), 'js/d3.v5.min.js')).read()
 
 
 class WEB_HELPERS(object):
@@ -186,8 +191,13 @@ class JSNode(Node):
         'allow_null_activation': bool
     }
 
+    def make_init_body(self, node_id):
+        # noop
+        return ''
+
     def make_body(self, node_id):
-        return 'null'
+        # noop
+        return ''
 
     def emit_code(self, node_id, network):
         out, errors = super().emit_code(node_id, network)
@@ -220,22 +230,47 @@ class JSNode(Node):
                     errors += errs
 
                     # TODO: invoke node after fetch
+
+                    if path.endswith('.csv'):
+                        content = """
+                        d3.csv("{uri}")
+                        .then({callback})
+                        .catch({exception})
+                        """
+                    else:
+                        content = """
+                        fetch("{uri}")
+                        .then(d => d.json())
+                        .then({callback})
+                        .catch({exception})
+                        """
+
+                    callback = """
+                    (data) => {{
+                       node_{sym}.data = data;
+                       invokeNode({sym});
+                    }}
+                    """.format(sym=node_id)
+
+                    exception = """
+                    (e) => {{ throw e }}
+                    """
                     
                     out.append(Code(
                         node_id=nid,
                         language=self.language,
                         file_name=None,
-                        content=JS_TEMPLATES.ui_network_fetch.format(
+                        content=content.format(
                             uri=path,
-                            callback="",
-                            exception=""
+                            callback=callback,
+                            exception=exception
                         )
                     ))
 
 
         template_args = {
             'sym': node_id, # the unique node id
-            'initBody': 'null', # optional initialisation of content, defaults to null
+            'initBody': self.make_init_body(node_id), # optional initialisation of content, defaults to null
             'namedArgs': [], # named arguments passed through edge model's 'names'
             'body': self.make_body(node_id), # the body of this node
 
@@ -252,7 +287,7 @@ class JSNode(Node):
             template_args['dependencies'].append('node_{sym}.data'.format(sym=nid))
 
         for nid, n, e in downstream:
-            template_args['dependents'].append('node_{sym}.data'.format(sym=nid))
+            template_args['dependents'].append('node_{sym}'.format(sym=nid))
             template_args['dependentAllowNulls'].append(
                 'true' if n.model.get('allow_null_activation') == True else 'false')
 
@@ -307,17 +342,32 @@ class MappingTableNode(MappingNode):
 
     def emit_code(self, node_id, network):
         out, errors = super().emit_code(node_id, network)
-        #raise NotImplementedError()
+
+        # TODO: make a table
+        
         return out, errors
 
 @register_node
 class MappingLookupNode(MappingNode):
 
     expected_model = {
-        'lookup': dict
+        'lookup': dict,
+        'is_static': bool
     }
 
     def make_body(self, node_id):
+        if self.model.get('is_static') != True:
+            return self._make_body(node_id)
+        else:
+            return super().make_body(node_id)
+
+    def make_init_body(self, node_id):
+        if self.model.get('is_static') == True:
+            return self._make_body(node_id)
+        else:
+            return super().make_init_body(node_id)
+        
+    def _make_body(self, node_id):
         parts = []
 
         for k, v in self.model.get('lookup', {}).items():
@@ -327,7 +377,7 @@ class MappingLookupNode(MappingNode):
                 continue
             parts.append('{}: {}'.format(k, v))
 
-        return """{{
+        return """this.data = {{
               {}
             }}""".format(',\n'.join(parts))
 
@@ -687,10 +737,10 @@ class HTML_Node(FileNode):
     def emit_code(self, node_id, network):
         out, errors = [], []
 
-        # notice this is double emission... TODO fix
-
-        js = ['<script src="{}"></script>'.format(js) for js in self.model.get('javascripts', [])]
-        css = ['<link rel="stylesheet" href="{}">'.format(css) for css in self.model.get('stylesheets', [])]
+        js = ['<script src="{}"></script>'.format(js) for js in
+              self.model.get('javascripts', [])]
+        css = ['<link rel="stylesheet" href="{}">'.format(css) for css in
+               self.model.get('stylesheets', [])]
 
         out.append(Code(
             node_id=node_id,
@@ -745,11 +795,12 @@ class JS_D3Node(JSVisualNode):
 
     expected_model = {
         'object': str,
+        'initObject': str,
         'methods': dict
     }
 
     def make_body(self, node_id):
-        s = 'd3.{}'.format(self.model['object'])
+        s = 'this.data = d3.{}({})'.format(self.model['object'], self.model.get('initObject', ''))
 
         ms = self.model.get('methods')
         if ms is not None:

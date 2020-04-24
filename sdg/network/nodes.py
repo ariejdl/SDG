@@ -149,7 +149,7 @@ class Node(object):
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
         return [], []
 
-    def prepare_neighbours(self, node_id, network):
+    def prepare_network(self, node_id, network):
         return [], []
 
     def emit_code(self, node_id, network):
@@ -181,6 +181,24 @@ class JSNode(Node):
                 # TODO: then invoke node after fetch
                 non_js.append((nid, n, e))
 
+                if isinstance(n, FileNode):
+                    if n.model.get('path') is not None:
+                        pass
+
+                    """
+                    server.get_static_path(node_id, html_node.model['path'])
+                    
+                    out.append(Code(
+                        node_id=nid,
+                        language=self.language,
+                        file_name=None,
+                        content=JS_TEMPLATES.ui_fetch_node.format({
+                        })
+                    ))
+                    """
+
+        print('\n**', non_js)
+
         out, errors = super().emit_code(node_id, network)
 
         template_args = {
@@ -188,9 +206,9 @@ class JSNode(Node):
             'initBody': 'null', # optional initialisation of content, defaults to null
             'namedArgs': [], # named arguments passed through edge model's 'names'
             'body': self.make_body(node_id), # the body of this node
-            
-            'dependents': [], # downstream symbols of node
+
             'dependencies': [], # upstream symbols of node
+            'dependents': [], # downstream symbols of node
             'dependentAllowNulls': [], # downstream symbols that can be activated with null values
             'dependentArgs': [] # the arguments supplied to a dependent
         }
@@ -206,7 +224,6 @@ class JSNode(Node):
             template_args['dependentAllowNulls'].append(
                 'true' if n.model.get('allow_null_activation') == True else 'false')
 
-            # TODO: not quite right
             upstream_, _ = get_upstream_downstream(nid, get_neighbours(nid, network))
             errs, dep_args = get_args(upstream_)
             if len(errs) == 0:
@@ -218,7 +235,6 @@ class JSNode(Node):
             else:
                 errors.append(NetworkBuildError("dependent has invalid arguments", node_id))
 
-        # TODO: not quite right, empty args case
         template_args['namedArgs'] = make_fn_args(sorted(args))
 
         # convert list to string
@@ -388,13 +404,11 @@ class JSClientNode(GeneralClientNode):
             
         return out, errors
 
-    def prepare_neighbours(self, node_id, network):
+    def prepare_network(self, node_id, network):
         """
-        derive paths of assets for client
-
-        ...check neighbours, get any web servers...determine uri of html/js assets...
+        set this client's default HTML URIs for JavaScript
         """
-        out, errors = super().emit_code(node_id, network)
+        out, errors = super().prepare_network(node_id, network)
         
         neighbours = get_neighbours(node_id, network)
         ns = self.test_neighbours(neighbours)
@@ -410,7 +424,7 @@ class JSClientNode(GeneralClientNode):
             errors.append(NetworkBuildException(
                 'found ambiguous Server count, want 1 not {}'.format(js_count), node_id=node_id))
 
-        # HTML URI
+        # default HTML URI
         if self.model.get('html_uri') is None:
             if server is None:
                 errors.append(NetworkBuildException(
@@ -421,7 +435,7 @@ class JSClientNode(GeneralClientNode):
                 except NetworkBuildException as e:
                     errors.append(e)
 
-        # JS URIS
+        # default JS URIS
         if len(self.model.get('js_uris', [])) == 0:
             if server is None:
                 errors.append(NetworkBuildException(
@@ -603,6 +617,6 @@ class JS_CanvasNode(JSVisualNode):
 class DOM_SVGNode(Node):
     
     def emit_code(self, node_id, network):
+        # TODO:
         out, errors = super().emit_code(node_id, network)
-        #raise NotImplementedError()
         return out, errors

@@ -379,20 +379,24 @@ class PyStaticServerNode(PyNode, StaticServerNode):
         'static_path': ''
     }
 
-    def get_static_path(self, node_id, asset):
-        is_relative = not asset.startswith(os.sep)
-        errors = []
-
+    def _get_launch_dir(self):
         launch_dir = self.model.get('launch_directory')
         if launch_dir is None:
             return None, [NetworkBuildException('no asset specified', node_id)]
-        if not launch_dir.startswith(os.sep):
+        if not os.path.isabs(launch_dir):
             return None, [NetworkBuildException('launch directory must be an absolute path', node_id)]
+        return launch_dir, []
+
+    def get_static_path(self, node_id, asset):
+        is_relative = not os.path.isabs(asset)
+        launch_dir, errors = self._get_launch_dir()
 
         if is_relative:
-            return os.path.join(launch_dir, asset.replace(os.sep, '/')), []
+            return os.path.join(launch_dir,
+                                self.model['static_directory'],
+                                asset.replace(os.sep, '/')), []
 
-        abs_asset = os.path.abspath(asset)
+        abs_asset = os.path.abspath(os.path.join(self.model['static_directory'], asset))
         rel_path = os.path.relpath(os.path.dirname(abs_asset), launch_dir)
         if rel_path.startswith('..'):
             return None, [NetworkBuildException(
@@ -403,11 +407,24 @@ class PyStaticServerNode(PyNode, StaticServerNode):
     def get_static_route(self, node_id, asset):
         if asset is None:
             return None, [NetworkBuildException('no asset specified', node_id=node_id)]
-        if asset.startswith('/') or asset.startswith(os.sep):
-            return None, [NetworkBuildException('please use a relative file path', node_id=node_id)]
+
+        launch_dir, errors = self._get_launch_dir()
+        if launch_dir is None:
+            return None, errors
+
+        if os.path.isabs(asset):
+            rel_path = os.path.relpath(os.path.dirname(asset), launch_dir)
+            if rel_path.startswith('..'):
+                return None, [NetworkBuildException(
+                    'asset outside of static server launch directory', node_id)]
+            else:
+                _, file_name = os.path.split(asset)
+                asset = os.path.join(rel_path.replace(os.sep, '/'), file_name)
 
         # this is a relative path
-        return '{}'.format(asset.replace(os.sep, '/')), []
+        return '{}'.format(
+            os.path.join(self.model['static_path'],
+                         asset).replace(os.sep, '/')).lstrip('./'), []
 
 @register_node
 class GeneralClientNode(Node):

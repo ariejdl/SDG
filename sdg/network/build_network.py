@@ -106,7 +106,7 @@ def resolve_partition(root, size_sorted, language, network):
     return all_code, info, warnings, errors
 
 def make_code_file(pth, file_name, code, header):
-    out_path = os.path.join(pth, file_name)
+    out_path = file_name if os.path.isabs(file_name) else os.path.join(pth, file_name)
     with open(out_path, 'w') as f:
         for c in header:
             f.write(c)

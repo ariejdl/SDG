@@ -7,20 +7,27 @@ from sdg.network.network import Network
 from sdg.network.build_network import build_network
 
 _build_dir = None
+_launch_dir = None
 
 TEST_DATA = 'test_data.csv'
 
 def setup_module():
     global _build_dir
-    pth = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '_build'))
-    _build_dir = pth
+    global _launch_dir
+    
+    _build_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '_build'))
+    _launch_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '_launch'))
 
     # TODO: remove
-    if os.path.exists(_build_dir):
-        shutil.rmtree(_build_dir)
+    _teardown()
     
     if not os.path.exists(_build_dir):
         os.mkdir(_build_dir)
+        
+    if not os.path.exists(_launch_dir):
+        os.mkdir(_launch_dir)
 
     with open(os.path.join(_build_dir, TEST_DATA), 'w') as f:
         f.write("a,b,c\n")
@@ -28,18 +35,31 @@ def setup_module():
         f.write("4,5,6\n")
         f.write("7,8,9")
 
+def _teardown():
+    global _build_dir
+    global _launch_dir
+    if os.path.exists(_build_dir):
+        shutil.rmtree(_build_dir)
+        
+    if os.path.exists(_launch_dir):
+        shutil.rmtree(_launch_dir)
+    
+        
 def teardown_module():
     # TODO: uncomment
-    #shutil.rmtree(_build_dir)
+    #_teardown()
     pass
 
 
 def test_basic():
     global _build_dir
+    global _launch_dir
 
     n = Network({
         'nodes': [
-            {'id': 1, 'type': 'py_static_server_node', 'model': { 'meta': { 'root_id': 1 }  } },
+            {'id': 1, 'type': 'py_static_server_node',
+             'model': { 'meta': { 'root_id': 1 }, 'directory': _launch_dir  } },
+            
             {'id': 2, 'type': 'file_node', 'model': {
                 'meta': { 'root_id': 1 },
                 'path': TEST_DATA

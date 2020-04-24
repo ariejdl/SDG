@@ -537,8 +537,6 @@ class HTML_Node(FileNode):
         
         return out, errors
 
-
-
 @register_node
 class LargeFileNode(Node):
     """
@@ -551,7 +549,7 @@ class StaticServerNode(WebServerNode):
     size = 3
 
     expected_model = {
-        'directory': str
+        'directory': str # default?
     }
 
     def emit_code(self, node_id, network):

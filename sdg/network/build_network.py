@@ -11,19 +11,14 @@ from .nodes import JS_TEMPLATES, JSClientNode, WebServerNode, HTML_Node
 def resolve_partition(root, size_sorted, language, network):
 
     # 3) resolve network into code (not necessarily a single tree):
+
+    # considerations:
     # - respect edges
     # - avoid cycles
     # - avoid double resolution
     # - detect communication between languages (edges of a different language)
-    # - ** detect which things are static dependencies, and which are dynamic, e.g. subject to user change
-    #     - ensure there are no cycles in event propagation (some cycles are ok, think about this situation)
-
-    """
-    for vs in language_roots.values():
-        for nid in vs:
-            for e in network.G.edges(nid):
-                print(e)
-    """
+    # - ** detect which things are static dependencies/dynamic, e.g. subject to user change
+    #     - ensure there are no cycles in event propagation
 
     print('\n')
 

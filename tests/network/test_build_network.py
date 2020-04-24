@@ -58,7 +58,7 @@ def test_basic():
     n = Network({
         'nodes': [
             {'id': 1, 'type': 'py_static_server_node',
-             'model': { 'meta': { 'root_id': 1 }, 'directory': _launch_dir  } },
+             'model': { 'meta': { 'root_id': 1 }, 'launch_directory': _launch_dir  } },
             
             {'id': 2, 'type': 'file_node', 'model': {
                 'meta': { 'root_id': 1 },

@@ -109,7 +109,9 @@ class Node(object):
     code has been emitted and has started execution, rather than before code has even been emitted
     """
 
+    # TODO: need to use this for validations otherwise it is unused code
     expected_model = {}
+    default_model = {}
     model = {}
     language = None
 
@@ -145,7 +147,20 @@ class Node(object):
         }
 
     def deserialize(self, model):
-        self.model = model
+        if type(model) is dict:
+            final_model = {}
+            for k, v in model.items():
+                final_model[k] = v
+                if k not in self.expected_model:
+                    # warning
+                    pass
+            for k, v in self.default_model.items():
+                if final_model.get(k) is None:
+                    final_model[k] = v
+                    
+            self.model = final_model
+        else:
+            self.model = None
     
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
         return [], []
@@ -179,8 +194,6 @@ class JSNode(Node):
         for nid, n, e in neighbours:
             language = n.language
             if language != self.language:
-                # TODO: cater for cross language calls...
-                # TODO: then invoke node after fetch
 
                 if isinstance(n, RESTNode):
                     # TODO: implement API call
@@ -194,10 +207,14 @@ class JSNode(Node):
 
                     if not isinstance(server, WebServerNode):
                         errors.append(NetworkBuildError(
-                            "expected webserver node to request asset, found: {}".format(type(server)), node_id))
+                            "expected webserver node to request asset, found: {}"
+                            .format(type(server)), node_id))
                         continue
                     
-                    path = server.get_static_path(node_id, n.model['path'])
+                    path, errs = server.get_static_route(node_id, n.model['path'])
+                    errors += errs
+
+                    # TODO: invoke node after fetch
                     
                     out.append(Code(
                         node_id=nid,
@@ -328,19 +345,70 @@ class WebServerNode(Node):
 
     # note this may come from config file node
     expected_model = {
+        'launch_directory': str,
+        'static_directory': str,
+        'static_path': str,
         'port': int
     }
 
-    def get_static_path(self, node_id, asset):
+    default_model = {
+        'static_directory': 'static',
+        'static_path': 'static'
+    }
+
+    def get_static_route(self, node_id, asset):
         raise NotImplementedError()
 
 @register_node
 class NginxServerNode(WebServerNode):
     expected_model = {
         'port': int,
-        'config': None
+        'config': str
     }
-    
+
+@register_node
+class StaticServerNode(WebServerNode):
+    def emit_code(self, node_id, network):
+        return super().emit_code(node_id, network)
+
+@register_node
+class PyStaticServerNode(PyNode, StaticServerNode):
+
+    default_model = {
+        'static_directory': '',
+        'static_path': ''
+    }
+
+    def get_static_path(self, node_id, asset):
+        is_relative = not asset.startswith(os.sep)
+        errors = []
+
+        launch_dir = self.model.get('launch_directory')
+        if launch_dir is None:
+            return None, [NetworkBuildException('no asset specified', node_id)]
+        if not launch_dir.startswith(os.sep):
+            return None, [NetworkBuildException('launch directory must be an absolute path', node_id)]
+
+        if is_relative:
+            return os.path.join(launch_dir, asset.replace(os.sep, '/')), []
+
+        abs_asset = os.path.abspath(asset)
+        rel_path = os.path.relpath(os.path.dirname(abs_asset), launch_dir)
+        if rel_path.startswith('..'):
+            return None, [NetworkBuildException(
+                'asset outside of static server launch directory', node_id)]
+
+        return abs_asset, []
+
+    def get_static_route(self, node_id, asset):
+        if asset is None:
+            return None, [NetworkBuildException('no asset specified', node_id=node_id)]
+        if asset.startswith('/') or asset.startswith(os.sep):
+            return None, [NetworkBuildException('please use a relative file path', node_id=node_id)]
+
+        # this is a relative path
+        return '{}'.format(asset.replace(os.sep, '/')), []
+
 @register_node
 class GeneralClientNode(Node):
     size = 4
@@ -364,7 +432,20 @@ class JSClientNode(GeneralClientNode):
                          'js': lambda n,e: (isinstance(n, FileNode) and
                                             n.model.get('mime_type') == MIME_TYPES.JS) })
         
+    def _get_server(self, ns, node_id):
+        errors = []
+        server_count = len(ns.get('server', []))
+        server = None
 
+        if server_count == 1:
+            server = ns['server'][0]
+        elif server_count > 1:
+            errors.append(NetworkBuildException(
+                'found ambiguous Server count, want 1 not {}'.format(js_count), node_id))
+
+        return server, errors
+    
+    
     def get_implicit_nodes_and_edges(self, node_id, neighbours):
         """
         provide default HTML and JS nodes if not provided
@@ -373,13 +454,23 @@ class JSClientNode(GeneralClientNode):
         
         ns = self.test_neighbours(neighbours)
 
+        server, errs = self._get_server(ns, node_id)
+
         html_count = len(ns.get('html', []))
         js_count = len(ns.get('js', []))
-        
+
+        if server is None:
+            errors.append(NetworkBuildException(
+                "Need a server for a {}".format(self.node_name()), node_id))
+
+            return out, errors
+
         if html_count == 0:
 
-            n = create_node({ 'mime_type': MIME_TYPES.HTML,
-                              'path': self.default_html_path },
+            html_path, errs = server.get_static_path(node_id, self.default_html_path)
+            errors += errs
+
+            n = create_node({ 'mime_type': MIME_TYPES.HTML, 'path': html_path },
                             type='html_node')
             e = create_edge({ })
 
@@ -395,8 +486,10 @@ class JSClientNode(GeneralClientNode):
         
         if js_count == 0:
 
-            n = create_node({ 'mime_type': MIME_TYPES.JS,
-                              'path': self.default_js_path },
+            js_path, errs = server.get_static_path(node_id, self.default_js_path)
+            errors += errs
+
+            n = create_node({ 'mime_type': MIME_TYPES.JS, 'path': js_path },
                             type='file_node')
             e = create_edge({ })
 
@@ -423,27 +516,22 @@ class JSClientNode(GeneralClientNode):
         neighbours = get_neighbours(node_id, network)
         ns = self.test_neighbours(neighbours)
 
-        server_count = len(ns.get('server', []))
         html_node = ns['html'][0]
         js_nodes = ns['js']
-        server = None
 
-        if server_count == 1:
-            server = ns['server'][0]
-        elif server_count > 1:
-            errors.append(NetworkBuildException(
-                'found ambiguous Server count, want 1 not {}'.format(js_count), node_id=node_id))
+        server, errs = self._get_server(ns, node_id)
+        errors += errs
 
         # default HTML URI
         if self.model.get('html_uri') is None:
             if server is None:
                 errors.append(NetworkBuildException(
-                    'JS Client has no server specified, cannot get HTML path', node_id=node_id))
+                    'JS Client has no server specified, cannot get HTML path', node_id))
             else:
-                try:
-                    self.model['html_uri'] = server.get_static_path(node_id, html_node.model['path'])
-                except NetworkBuildException as e:
-                    errors.append(e)
+                uri, errs = server.get_static_route(node_id, html_node.model['path'])
+                if uri is not None:
+                    self.model['html_uri'] = uri
+                errors += errs
 
         # default JS URIS
         if len(self.model.get('js_uris', [])) == 0:
@@ -453,10 +541,10 @@ class JSClientNode(GeneralClientNode):
             else:
                 self.model.setdefault('js_uris', [])
                 for n in js_nodes:
-                    try:
-                        self.model['js_uris'].append(server.get_static_path(node_id, n.model['path']))
-                    except NetworkBuildException as e:
-                        errors.append(e)
+                    uri, errs = server.get_static_route(node_id, n.model['path'])                    
+                    if uri is not None:
+                        self.model['js_uris'].append(uri)
+                    errors += errs
 
         html_node.model.setdefault('javascripts', [])
         html_node.model['javascripts'] += self.model.get('js_uris', [])
@@ -509,8 +597,8 @@ class PythonScript(FileNode):
 class HTML_Node(FileNode):
     
     expected_model = {
-        'javascripts': [],
-        'stylesheets': []
+        'javascripts': list,
+        'stylesheets': list
     }
 
     def __init__(self, model):
@@ -544,30 +632,6 @@ class LargeFileNode(Node):
     """
     size = 2
     
-@register_node
-class StaticServerNode(WebServerNode):
-    size = 3
-
-    expected_model = {
-        'directory': str # default?
-    }
-
-    def emit_code(self, node_id, network):
-        return super().emit_code(node_id, network)
-
-@register_node
-class PyStaticServerNode(PyNode, StaticServerNode):
-
-    def get_static_path(self, node_id, asset):
-        if asset is None:
-            raise NetworkBuildException('no asset specified', node_id=node_id)
-        if asset.startswith('/') or asset.startswith(os.sep):
-            raise NetworkBuildException('please use a relative file path', node_id=node_id)
-
-        # this is a relative path
-        return '{}'.format(asset.replace(os.sep, '/'))
-
-
 @register_node
 class PyFlaskServerNode(PyNode, WebServerNode):
     pass
@@ -619,7 +683,6 @@ class JS_D3Node(JSVisualNode):
 
     def emit_code(self, node_id, network):
         out, errors = super().emit_code(node_id, network)
-        #raise NotImplementedError()
         return out, errors
     
     

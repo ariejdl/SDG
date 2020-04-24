@@ -1,30 +1,24 @@
 
-// notes:
-// records dependencies of previous activation of node
-// _nodeDependencies[] = {{}}
-
-// record/track call stack so can prevent infinite loops, e.g. callStack.indexOf(node_sym_callback)...
-// e.g. callCount = {{}} // every _callbable is called with the current resolution_id...cull after one second, mark last call count Date.now()
-// e.g. callCount{{node_callbable}} += 1
-// e.g. check recursion depth and stop
-
-// what about async,throttling etc.?
-
-// interactive UI creation could be accomplished with
-// passing variables through network
-
-
-// - ... recipes are similar to this ...
-// - ... strongly desire to remove namespaces ... require $ prefix, thus $conf ... e.g. 'conf' ...
-//       - ... very hard to refactor dependents ... loose coupling ...
-
+// ...what about async,throttling etc.?
+// ...interactive UI creation could be accomplished with passing variables through network
+// ... recipes are similar to this ...
 
 const maxRecursion = 50;
 let _networkInvocationId = 0;
-
 let _nodeDepencies = {};
-
 let _networkInvocations = {};
+let _nodeRegistry = {}
+
+function invokeNode(nodeId) {
+  // need args/deps and invocation id
+  let name = `node_${nodeId}`;
+  if (name in _nodeRegistry) {
+    _nodeRegistry[name].invoke(_networkInvocationId++);
+  } else {
+    throw `node ${name} not found`;
+  }
+}
+
 function updateAndCheckCalls(_networkInvocationId, callable) {
   // check excessive recursion
   let current = _networkInvocations[_networkInvocationId];
@@ -103,4 +97,55 @@ function arrayNoNulls(arr) {
     }
   }
   return true;
+}
+
+class Node {
+
+  constructor(nodeId,
+              dependencies,
+              dependents,
+              dependentsAllowNulls,
+              dependentArgs,
+              initBody,
+              invokeFn) {
+
+    this.callableId = `node_${nodeId}`;
+    this.dependencies = dependencies;
+    this.invokeFn = invokeFn;
+
+    this.dependents = dependents;
+    this.dependentsAllowNulls = dependentsAllowNulls;
+    this.dependentArgs = dependentArgs;
+    
+    this.data = initBody;
+
+    _nodeRegistry[this.callableId] = this;
+  }
+
+  invoke(networkInvocationId) {
+
+    if (updateAndCheckCalls(networkInvocationId, this.callableId)) {
+      // in case there is too much recursion
+      return;
+    }
+
+    const updatedDependencies = this.dependencies().slice()
+    if (allowCallAndChanged(_nodeDepencies[this.callableId], updatedDependencies)) {
+      _nodeDepencies[this.callableId] = updatedDependencies;
+
+      // update
+      this.invokeFn(networkInvocationId, ...updatedDependencies);
+
+      // update downstream nodes
+      const dependents = this.dependents();
+      const dependentArgs = this.dependentArgs()
+      
+      for (let i = 0; i < dependents.length; i++) {
+        if (this.dependentsAllowNulls[i] || arrayNoNulls(dependentArgs[i])) {
+          const res = _dependents[i]( ...dependentArgs[i] );
+          // if (isPromise) {{ res.then( fn ); }}
+        }
+      }
+    }
+  }
 }

@@ -9,3 +9,4 @@ _notes/
 *#
 .#*
 *.egg-info/
+tests/_build/*

@@ -9,6 +9,7 @@ import types
 class JS_TEMPLATES(object):
     ui_header = open(os.path.join(os.path.dirname(__file__), 'js/ui_header.js')).read()
     ui_node = open(os.path.join(os.path.dirname(__file__), 'js/ui_node.js')).read()
+    ui_network_fetch = open(os.path.join(os.path.dirname(__file__), 'js/ui_network_fetch.js')).read()
 
 
 class WEB_HELPERS(object):
@@ -170,36 +171,45 @@ class JSNode(Node):
         return 'null'
 
     def emit_code(self, node_id, network):
+        out, errors = super().emit_code(node_id, network)
+        
         neighbours = get_neighbours(node_id, network)
         upstream, downstream = get_upstream_downstream(node_id, neighbours)
 
-        non_js = []
         for nid, n, e in neighbours:
             language = n.language
             if language != self.language:
                 # TODO: cater for cross language calls...
                 # TODO: then invoke node after fetch
-                non_js.append((nid, n, e))
+
+                if isinstance(n, RESTNode):
+                    # TODO: implement API call
+                    pass
 
                 if isinstance(n, FileNode):
-                    if n.model.get('path') is not None:
-                        pass
+                    if n.model.get('path') is None:
+                        continue
 
-                    """
-                    server.get_static_path(node_id, html_node.model['path'])
+                    server = network.nodes[n.model['meta']['root_id']]
+
+                    if not isinstance(server, WebServerNode):
+                        errors.append(NetworkBuildError(
+                            "expected webserver node to request asset, found: {}".format(type(server)), node_id))
+                        continue
+                    
+                    path = server.get_static_path(node_id, n.model['path'])
                     
                     out.append(Code(
                         node_id=nid,
                         language=self.language,
                         file_name=None,
-                        content=JS_TEMPLATES.ui_fetch_node.format({
-                        })
+                        content=JS_TEMPLATES.ui_network_fetch.format(
+                            uri=path,
+                            callback="",
+                            exception=""
+                        )
                     ))
-                    """
 
-        print('\n**', non_js)
-
-        out, errors = super().emit_code(node_id, network)
 
         template_args = {
             'sym': node_id, # the unique node id
@@ -217,10 +227,10 @@ class JSNode(Node):
         errors += errs
 
         for nid, n, e in upstream:
-            template_args['dependencies'].append('node_{sym}_data'.format(sym=nid))
+            template_args['dependencies'].append('node_{sym}.data'.format(sym=nid))
 
         for nid, n, e in downstream:
-            template_args['dependents'].append('node_{sym}_data'.format(sym=nid))
+            template_args['dependents'].append('node_{sym}.data'.format(sym=nid))
             template_args['dependentAllowNulls'].append(
                 'true' if n.model.get('allow_null_activation') == True else 'false')
 
@@ -229,8 +239,8 @@ class JSNode(Node):
             if len(errs) == 0:
                 # sort by name, then get node ids
                 sorted_args = sorted(zip(dep_args, upstream_), key=lambda v: v[0])
-                fn_args = ['node_{sym}_data'.format(sym=v[1][0]) for v in sorted_args]
-                dep_args_str = '[networkInvocationId{}]'.format(make_fn_args(fn_args))
+                fn_args = ['node_{sym}.data'.format(sym=v[1][0]) for v in sorted_args]
+                dep_args_str = '[{}]'.format(', '.join(fn_args))
                 template_args['dependentArgs'].append(dep_args_str)
             else:
                 errors.append(NetworkBuildError("dependent has invalid arguments", node_id))
@@ -321,7 +331,7 @@ class WebServerNode(Node):
         'port': int
     }
 
-    def get_static_path(self, asset):
+    def get_static_path(self, node_id, asset):
         raise NotImplementedError()
 
 @register_node
@@ -555,6 +565,8 @@ class PyStaticServerNode(PyNode, StaticServerNode):
             raise NetworkBuildException('no asset specified', node_id=node_id)
         if asset.startswith('/') or asset.startswith(os.sep):
             raise NetworkBuildException('please use a relative file path', node_id=node_id)
+
+        # this is a relative path
         return '{}'.format(asset.replace(os.sep, '/'))
 
 
@@ -567,7 +579,7 @@ class PyTornadoServerNode(PyNode, WebServerNode):
     pass
 
 @register_node
-class PyRESTNode(PyNode):
+class RESTNode(Node):
     size = 2
 
     expected_model = {
@@ -578,6 +590,10 @@ class PyRESTNode(PyNode):
         'patch': types.FunctionType,
         'delete': types.FunctionType,
     }
+
+@register_node
+class PyRESTNode(PyNode, RESTNode):
+    pass
 
 class JSVisualNode(JSNode):
     size = 1

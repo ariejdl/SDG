@@ -1,27 +1,14 @@
-let node_{sym}_data = {initBody};
-const node_{sym}_callable = (networkInvocationId{namedArgs}) => {{
-  const _dependents = [{dependents}];
-  const _dependentsAllowNulls = [{dependentAllowNulls}];
-  const _dependentArgs = [{dependentArgs}];
+const node_{sym} = new Node(
+  {sym},
+  () => [{dependencies}],
 
-  if (updateAndCheckCalls(networkInvocationId, 'node_{sym}_callable')) {{
-    // in case there is too much recursion
-    return;
+  () => [{dependents}],
+  [{dependentAllowNulls}],
+  () => [{dependentArgs}],
+
+  {initBody},
+  
+  (networkInvocationId{namedArgs}) => {{
+    this.data = {body};
   }}
-
-  // this is stateful, need to know previous values
-  if (allowCallAndChanged(_nodeDepencies['node_{sym}_callable'], [{dependencies}])) {{
-    _nodeDepencies['node_{sym}_callable'] = [{dependencies}];
-
-    console.log('calling node {sym}');
-
-    node_{sym}_data = {body};
-
-    for (let i = 0; i < _dependents.length; i++) {{
-      if (_dependentsAllowNulls[i] || arrayNoNulls(_dependentArgs[i])) {{
-        const res = _dependents[i]({{ ..._dependentArgs[i] }});
-        // if (isPromise) {{ res.then( fn ); }}
-      }}
-    }}
-  }}
-}}
+)

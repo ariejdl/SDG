@@ -6,7 +6,7 @@ import logging as log
 import networkx as nx
 
 from .utils import NetworkBuildException, edge_key, get_neighbours
-from .nodes import JS_TEMPLATES
+from .nodes import JS_TEMPLATES, JSClientNode, WebServerNode, HTML_Node
 
 def resolve_partition(root, size_sorted, language, network):
 
@@ -173,7 +173,7 @@ def build_network(network):
             continue
         
         roots.setdefault(root_id, { 'languages': set() })
-        
+
         roots[root_id].setdefault(size, [])
         roots[root_id][size].append(node_id)
         if language is not None:

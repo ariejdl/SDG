@@ -8,12 +8,12 @@ from sdg.network.build_network import build_network
 
 _build_dir = None
 _launch_dir = None
-
-TEST_DATA = 'test_data.csv'
+_test_data = None
 
 def setup_module():
     global _build_dir
     global _launch_dir
+    global _test_data
     
     _build_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), '..', '_build'))
@@ -29,7 +29,9 @@ def setup_module():
     if not os.path.exists(_launch_dir):
         os.mkdir(_launch_dir)
 
-    with open(os.path.join(_build_dir, TEST_DATA), 'w') as f:
+    _test_data = os.path.join(_build_dir, "test_data.csv")
+
+    with open(_test_data, 'w') as f:
         f.write("a,b,c\n")
         f.write("1,2,3\n")
         f.write("4,5,6\n")
@@ -54,6 +56,7 @@ def teardown_module():
 def test_basic():
     global _build_dir
     global _launch_dir
+    global _test_data
 
     n = Network({
         'nodes': [
@@ -62,7 +65,7 @@ def test_basic():
             
             {'id': 2, 'type': 'file_node', 'model': {
                 'meta': { 'root_id': 1 },
-                'path': TEST_DATA
+                'path': os.path.abspath(_test_data)
             }, },
             
             {'id': 3, 'type': 'js_client_node', 'model': { 'meta': { 'root_id': 3 }  } },

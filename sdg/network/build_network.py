@@ -120,6 +120,8 @@ def emit_code(pth, code):
     code_by_lang = {}
 
     for c in code:
+        if c.emitted == True:
+            continue
         if c.language is not None:
             if c.file_name is not None:
                 files_by_lang.setdefault(c.language, [])

@@ -1,6 +1,8 @@
 
 import os
 import json
+from shutil import copyfile
+
 from .utils import (camel_to_snake, register_node,
                     create_node, create_edge, NetworkBuildException,
                     get_neighbours)
@@ -89,16 +91,18 @@ class Code():
     file_name = None # anon
     content = None
     node_id = None
+    emitted = None
     
     def __init__(self, **kwargs):
         self.language = kwargs.get('language')
         self.file_name = kwargs.get('file_name')
         self.content = kwargs.get('content')
+        self.emitted = kwargs.get('emitted') == True
         self.node_id = kwargs['node_id']
 
     def __repr__(self):
         obj = {}
-        for k in ['language', 'file_name', 'node_id']:
+        for k in ['language', 'file_name', 'node_id', 'emitted']:
             obj[k] = getattr(self, k)
         return json.dumps(obj)
 
@@ -210,8 +214,9 @@ class JSNode(Node):
                             "expected webserver node to request asset, found: {}"
                             .format(type(server)), node_id))
                         continue
-                    
-                    path, errs = server.get_static_route(node_id, n.model['path'])
+
+                    fpath = n.emit_path if n.emit_path is not None else n.model['path']
+                    path, errs = server.get_static_route(node_id, fpath)
                     errors += errs
 
                     # TODO: invoke node after fetch
@@ -379,17 +384,26 @@ class PyStaticServerNode(PyNode, StaticServerNode):
         'static_path': ''
     }
 
-    def _get_launch_dir(self):
+    def _get_launch_dir(self, node_id):
         launch_dir = self.model.get('launch_directory')
         if launch_dir is None:
-            return None, [NetworkBuildException('no asset specified', node_id)]
+            return None, [NetworkBuildException('no launch directory specified', node_id)]
         if not os.path.isabs(launch_dir):
             return None, [NetworkBuildException('launch directory must be an absolute path', node_id)]
         return launch_dir, []
 
+    def asset_in_server(self, asset):
+        launch_dir, _ = self._get_launch_dir(None)
+        if launch_dir is None:
+            return None
+        if not os.path.abspath(asset):
+            return None
+        rel_path = os.path.relpath(os.path.dirname(asset), launch_dir)
+        return not rel_path.startswith('..')
+
     def get_static_path(self, node_id, asset):
         is_relative = not os.path.isabs(asset)
-        launch_dir, errors = self._get_launch_dir()
+        launch_dir, errors = self._get_launch_dir(node_id)
 
         if is_relative:
             return os.path.join(launch_dir,
@@ -408,7 +422,7 @@ class PyStaticServerNode(PyNode, StaticServerNode):
         if asset is None:
             return None, [NetworkBuildException('no asset specified', node_id=node_id)]
 
-        launch_dir, errors = self._get_launch_dir()
+        launch_dir, errors = self._get_launch_dir(node_id)
         if launch_dir is None:
             return None, errors
 
@@ -482,12 +496,15 @@ class JSClientNode(GeneralClientNode):
 
             return out, errors
 
+        root_id = self.model['meta']['root_id']
+
         if html_count == 0:
 
             html_path, errs = server.get_static_path(node_id, self.default_html_path)
             errors += errs
 
-            n = create_node({ 'mime_type': MIME_TYPES.HTML, 'path': html_path },
+            n = create_node({ 'mime_type': MIME_TYPES.HTML, 'path': html_path,
+                              'meta': { 'root_id': root_id } },
                             type='html_node')
             e = create_edge({ })
 
@@ -506,7 +523,8 @@ class JSClientNode(GeneralClientNode):
             js_path, errs = server.get_static_path(node_id, self.default_js_path)
             errors += errs
 
-            n = create_node({ 'mime_type': MIME_TYPES.JS, 'path': js_path },
+            n = create_node({ 'mime_type': MIME_TYPES.JS, 'path': js_path,
+                              'meta': { 'root_id': root_id } },
                             type='file_node')
             e = create_edge({ })
 
@@ -584,25 +602,67 @@ class FileNode(Node):
     """
     size = 2
 
+    emit_path = None
+
     expected_model = {
         'path': None, # optional
         'content': None, # optional
         'mime_type': None # optional
     }
 
+    def prepare_network(self, node_id, network):
+        """
+        if necessary make a copy of this file for it to servable by a web server
+        """
+        out, errors = super().prepare_network(node_id, network)
+
+        path = self.model.get('path')
+        server = network.nodes[self.model['meta']['root_id']]
+
+        if path is not None and \
+           os.path.exists(path) and \
+           isinstance(server, WebServerNode) and \
+           not server.asset_in_server(path):
+
+            dir_, file_ = os.path.split(path)
+            asset_path, errs = server.get_static_path(node_id, file_)
+            if asset_path is not None and len(errs) == 0:
+                copyfile(path, asset_path)
+                self.emit_path = asset_path
+            else:
+                errors += errs
+            
+        return out, errors
+
     def emit_code(self, node_id, network):
+        """
+        emit code
+        """
         out, errors = super().emit_code(node_id, network)
 
         mime_type = self.model.get('mime_type')
+        language = None
         if mime_type == MIME_TYPES.JS:
-            out.append(Code(
-                node_id=node_id,
-                language='javascript',
-                file_name=self.model.get('path'),
-                content=None)
-            )
-        else:
-            errors.append(NetworkBuildException('file could not be resolved: {}'.format(mime_type), node_id))
+            language = 'javascript'
+        elif mime_type == MIME_TYPES.HTML:
+            language = 'html'
+
+        emitted = False
+        path = self.model.get('path')
+        server = network.nodes[self.model['meta']['root_id']]
+
+        if path is not None and \
+           os.path.exists(path) and \
+           isinstance(server, WebServerNode):
+            emitted = True
+
+        out.append(Code(
+            emitted=emitted,
+            node_id=node_id,
+            language=language,
+            file_name=path,
+            content=None if emitted else self.model.get('content'))
+        )
         
         return out, errors
 
@@ -625,7 +685,9 @@ class HTML_Node(FileNode):
 
 
     def emit_code(self, node_id, network):
-        out, errors = super().emit_code(node_id, network)
+        out, errors = [], []
+
+        # notice this is double emission... TODO fix
 
         js = ['<script src="{}"></script>'.format(js) for js in self.model.get('javascripts', [])]
         css = ['<link rel="stylesheet" href="{}">'.format(css) for css in self.model.get('stylesheets', [])]

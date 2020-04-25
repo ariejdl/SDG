@@ -784,13 +784,20 @@ class HTML_Page_Node(FileNode):
 
         errors = []
 
-        # TODO: this is still be wrong as order of insertion depends on network resolution order
-        # ... must add all, then figure this out
-        # ... in order to do this correctly need to convert network into a tree from selectors
-        #     ... and progressively remove detached nodes as their parents are found
-        # ... if can't find parent, add an error
-        for s, n in self.queued_body_nodes:
-            self.add_body_node(node_id, s, n)
+        # TODO: improve
+        # naive algorithm, keep trying to add nodes until no more can be added
+        added_nodes = 1
+        remaining_nodes = self.queued_body_nodes
+        while added_nodes:
+            added_nodes = 0
+            new_nodes = []
+            for parent, node in remaining_nodes:
+                ok = self.add_body_node(node_id, parent, node)
+                if ok:
+                    added_nodes += 1
+                else:
+                    new_nodes.append((parent, node))
+            remaining_nodes = new_nodes
         
         nodes = self.model.get('body_nodes')
         if nodes is not None:

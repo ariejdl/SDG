@@ -19,27 +19,6 @@ class JS_TEMPLATES(object):
         return open(os.path.join(os.path.dirname(__file__), 'js/d3.v5.min.js')).read()
 
 
-class WEB_HELPERS(object):
-    js_function = '''({args}) => {{
-      {body}
-    }}'''
-
-    js_body_load = '''document.addEventListener("DOMContentLoaded", function() {{
-      {body}
-    }});
-    '''
-    
-    html_page = '''<!html>
-              <html>
-                <head>
-                {head}
-                </head>
-              <body>
-                {body}
-              </body>
-            </html>'''
-
-
 def make_fn_args(args):
     out = ""
     for arg in args:
@@ -664,6 +643,7 @@ class FileNode(Node):
         """
         if necessary make a copy of this file for it to servable by a web server
         """
+        self.emit_path = None
         out, errors = super().prepare_network(node_id, network)
 
         path = self.model.get('path')
@@ -720,12 +700,33 @@ class FileNode(Node):
 class PythonScript(FileNode):
     language = 'python'
 
+def find_tree_node(parent, selector):
+    # depth first search
+    for c in parent['children']:
+        # TODO: add better selectors, it will otherwise lead to too many matches
+        if c['tag'] == selector:
+            return c
+        res = find_tree_node(c, selector)
+        if res is not None:
+            return res
+    return None
+
+def make_html_tree(tree):
+    tags = []
+    for n in tree['children']:
+        tags.append('<{}>'.format(n['tag']))
+        tags.append(make_html_tree(n))
+        tags.append('</{}>'.format(n['tag']))
+    
+    return '\n'.join(tags)
+
 @register_node
 class HTML_Node(FileNode):
     
     expected_model = {
         'javascripts': list,
-        'stylesheets': list
+        'stylesheets': list,
+        'body_nodes': list # tree of nodes to emit
     }
 
     def __init__(self, model):
@@ -733,6 +734,21 @@ class HTML_Node(FileNode):
             model['mime_type'] = MIME_TYPES.HTML
         super().__init__(model)
 
+    def add_body_node(self, parent_selector, node):
+        self.model.setdefault('body_nodes', [{ 'tag': 'body', 'children': [] }])
+        n = find_tree_node(self.model['body_nodes'][0], parent_selector)
+        if n is not None:
+            node.setdefault('children', [])
+            n['children'].append(node)
+        return None
+
+    def make_body(self):
+        nodes = self.model.get('body_nodes')
+        if nodes is not None:
+            if len(nodes) > 1:
+                raise Exception('should only have one root body node')
+            return make_html_tree(nodes[0])
+        return ''
 
     def emit_code(self, node_id, network):
         out, errors = [], []
@@ -746,9 +762,17 @@ class HTML_Node(FileNode):
             node_id=node_id,
             language='html',
             file_name=self.model['path'],
-            content=WEB_HELPERS.html_page.format(
+            content='''<!html>
+              <html>
+                <head>
+                {head}
+                </head>
+              <body>
+                {body}
+              </body>
+            </html>'''.format(
                 head='\n'.join(js + css),
-                body=""
+                body=self.make_body()
             ))
         )
         
@@ -821,12 +845,67 @@ class JS_CanvasNode(JSVisualNode):
     pass
 
 @register_node
-class DOM_SVGNode(JSNode):
+class DOMNode(JSNode):
+
+    expected_model = {
+        'tag': str,
+        'parent_selector': str
+    }
+
+    is_inserted = False
     
-    def emit_code(self, node_id, network):
+    def prepare_network(self, node_id, network):
         # TODO:
         # - check if attached to dom from neighbours
         # - if not in initialisation find dom and attach to it
+        out, errors = [], []
+
+        tag = self.model.get('tag')
+
+        if tag is None:
+            
+            return out, errors
         
+        par = self.model.get('parent_selector')
+        self.is_inserted = False
+        
+        if par is not None:
+            # insert into HTML during compiliation time
+            html_nodes = []
+
+            # 1) check neighours for HTML node
+            neighbours = get_neighbours(node_id, network)
+            for n in neighbours:
+                if type(n) is HTML_Node:
+                    html_nodes.append(n)
+
+            if len(html_nodes) == 0:
+                # 2) check whole network for one HTML node and one only with same root_id
+                root_id = self.model['meta']['root_id']
+                for n in network.nodes_for_root_id(root_id):
+                    if type(n) is HTML_Node:
+                        html_nodes.append(n)
+
+            if len(html_nodes) == 1:
+                n = html_nodes[0].add_body_node(par, { 'tag': tag })
+                if n is not None:
+                    self.is_inserted = True
+                else:
+                    errors.append(NetworkBuildException(
+                        'Unable to find matching parent to node', node_id))
+                    
+            if len(html_nodes) > 1:
+                errors.append(NetworkBuildException(
+                    'Ambiguous HTML page to attach to, more than one found', node_id))
+        
+
+        return out, errors
+
+    def emit_code(self, node_id, network):        
         out, errors = super().emit_code(node_id, network)
+
+        if self.is_inserted:
+            # - when dom loads get ref to this node
+            pass
+
         return out, errors

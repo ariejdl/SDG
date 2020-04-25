@@ -84,12 +84,13 @@ def test_basic():
                     'id_accessor': '(v) => v.id'
                 } } },
             
-            {'id': 6, 'type': 'dom_svg_node', 'model': {
+            {'id': 6, 'type': 'dom_node', 'model': {
                 'meta': { 'root_id': 3 },
+                'parent_selector': 'body',
                 'tag': 'svg',
                 'attrs': { 'width': '$conf.width', 'height': '$conf.height' } } },
             
-            {'id': 7, 'type': 'dom_svg_node', 'model': {
+            {'id': 7, 'type': 'dom_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'tag': 'circle',
                 'attrs': {
@@ -123,11 +124,11 @@ def test_basic():
             {'id1': 5, 'id2': 7, 'type': 'mapping_edge', 'model': { } },
             
             {'id1': 6, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'names': { 8: '$svg' } } },
+                'meta': { 'target_id': 7 }, 'name': '$svg' } },
             {'id1': 8, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'names': { 8: '$x_scale' } } },
+                'meta': { 'target_id': 7 }, 'name': '$x_scale' } },
             {'id1': 9, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'names': { 9: '$y_scale' } } },
+                'meta': { 'target_id': 7 }, 'name': '$y_scale' } },
 
             # places where $conf is used
             {'id1': 10, 'id2': 7, 'type': None, 'model': {

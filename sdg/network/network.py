@@ -33,6 +33,11 @@ class Network(object):
         else:
             return 1
 
+    def nodes_for_root_id(self, root_id):
+        for n in self.nodes.values():
+            if n.model['meta']['root_id'] == root_id:
+                yield n
+
     def add_node(self, id=None, node=None, model=None, type=None):
         if id is None:
             id = self.genid()

@@ -11,6 +11,6 @@ const node_{sym} = new Node(
   }},
   
   function (networkInvocationId{namedArgs}) {{
-    {body};
+    {body}
   }}
 )

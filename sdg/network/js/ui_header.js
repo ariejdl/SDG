@@ -9,6 +9,13 @@ let _networkInvocationId = 0;
 let _nodeDepencies = {};
 let _networkInvocations = {};
 let _nodeRegistry = {}
+let _domLoadCallbacks = [];
+
+document.addEventListener("DOMContentLoaded", function() {
+  for (let i = 0; i < _domLoadCallbacks.length; i++) {
+    _domLoadCallbacks[i]();
+  }
+});
 
 function invokeNode(nodeId) {
   // need args/deps and invocation id

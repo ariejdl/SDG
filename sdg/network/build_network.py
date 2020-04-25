@@ -6,7 +6,7 @@ import logging as log
 import networkx as nx
 
 from .utils import NetworkBuildException, edge_key, get_neighbours
-from .nodes import JS_TEMPLATES, JSClientNode, WebServerNode
+from .nodes import WEB_TEMPLATES, JSClientNode, WebServerNode
 
 def resolve_partition(root, size_sorted, language, network):
 
@@ -129,7 +129,7 @@ def emit_code(pth, code):
     for lang, code in code_by_lang.items():
         header = []
         if lang == 'javascript':
-            header = [JS_TEMPLATES.ui_header, JS_TEMPLATES.ui_d3()]
+            header = [WEB_TEMPLATES.ui_header, WEB_TEMPLATES.ui_d3()]
         
         fs = files_by_lang.get(lang, [])
         if len(fs) == 1:

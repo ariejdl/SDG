@@ -10,7 +10,7 @@ from .utils import (camel_to_snake, register_node,
 from .edges import MappingEdge
 import types
 
-class JS_TEMPLATES(object):
+class WEB_TEMPLATES(object):
     ui_header = open(os.path.join(os.path.dirname(__file__), 'js/ui_header.js')).read()
     ui_node = open(os.path.join(os.path.dirname(__file__), 'js/ui_node.js')).read()
 
@@ -19,6 +19,11 @@ class JS_TEMPLATES(object):
     def ui_d3(cls):
         return open(os.path.join(os.path.dirname(__file__), 'js/d3.v5.min.js')).read()
 
+    @classmethod
+    @lru_cache(maxsize=1)
+    def ui_reset_css(cls):
+        return open(os.path.join(os.path.dirname(__file__), 'css/reset.css')).read()
+    
 
 def make_fn_args(args):
     out = ""
@@ -295,7 +300,7 @@ class JSNode(Node):
             node_id=node_id,
             language=self.language,
             file_name=None,
-            content=JS_TEMPLATES.ui_node.format(**template_args)
+            content=WEB_TEMPLATES.ui_node.format(**template_args)
         ))
         
         return out, errors

@@ -24,14 +24,6 @@ class WEB_TEMPLATES(object):
     def ui_reset_css(cls):
         return open(os.path.join(os.path.dirname(__file__), 'css/reset.css')).read()
     
-
-def make_fn_args(args):
-    out = ""
-    for arg in args:
-        out += ", "
-        out += str(arg)
-    return out
-    
 def test_neighbours(neighbours, tests):
     out = {}
     for nid, n, e in neighbours:
@@ -287,7 +279,7 @@ class JSNode(Node):
             else:
                 errors.append(NetworkBuildError("dependent has invalid arguments", node_id))
 
-        template_args['namedArgs'] = make_fn_args([arg for u, arg in upstream_args])
+        template_args['namedArgs'] = ', '.join([arg for u, arg in upstream_args])
 
         # convert list to string
         for k,v in template_args.items():

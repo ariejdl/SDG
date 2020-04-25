@@ -151,7 +151,7 @@ class Node {
       //debugger;
 
       // update
-      this.invokeFn(networkInvocationId, ...updatedDependencies);
+      this.invokeFn(...updatedDependencies);
 
       // update downstream nodes
       const dependents = this.dependents();

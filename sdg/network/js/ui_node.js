@@ -10,7 +10,7 @@ const node_{sym} = new Node(
     {initBody}
   }},
   
-  function (networkInvocationId{namedArgs}) {{
+  function ({namedArgs}) {{
     {body}
   }}
 )

@@ -88,6 +88,7 @@ def test_basic():
                 'meta': { 'root_id': 3 },
                 'parent_selector': 'body',
                 'tag': 'svg',
+                'styles': { 'background': '#f2f2f2' },
                 'attrs': { 'width': '$conf.width', 'height': '$conf.height' } } },
             
             {'id': 7, 'type': 'dom_node', 'model': {

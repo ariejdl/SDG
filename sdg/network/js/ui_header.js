@@ -136,7 +136,7 @@ class Node {
 
   invoke(networkInvocationId) {
 
-    console.log('start invoke ' + this.callableId);
+    //console.log('start invoke ' + this.callableId);
 
     if (updateAndCheckCalls(networkInvocationId, this.callableId)) {
       // in case there is too much recursion

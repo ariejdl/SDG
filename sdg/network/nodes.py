@@ -909,6 +909,8 @@ class DOMNode(JSNode):
 
     expected_model = {
         'tag': str,
+        'attrs': dict,
+        'styles': dict,
         'parent_selector': str
     }
 
@@ -981,9 +983,19 @@ class DOMNode(JSNode):
         return out, errors
 
     def make_body(self, node_id):
+
+        attrs = self.model.get('attrs', {})
+        styles = self.model.get('styles', {})
+        s = []
+        for k,v in attrs.items():
+            s.append('.attr("{}", {})'.format(k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
+        for k,v in styles.items():
+            s.append('.style("{}", {})'.format(k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
         return '''
-        d3.select(this.data).attr('width', 100)
-        '''
+        d3.select(this.data)
+        {}
+        '''.format('\n'.join(s))
+
 
     def emit_code(self, node_id, network):
         out, errors = [], []

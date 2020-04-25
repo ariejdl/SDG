@@ -14,6 +14,9 @@ class Edge(object):
     @classmethod
     def edge_name(cls):
         return camel_to_snake(cls.__name__)
+
+    def __repr__(self):
+        return json.dumps({ "type": self.edge_name(), "model": self.model })
     
     def serialize(self, id1_, id2_):
         return {
@@ -58,3 +61,4 @@ class MappingEdge(Edge):
     """
     this is the D3'esque mapping/binding of data to a visual
     """
+    pass

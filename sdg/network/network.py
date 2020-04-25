@@ -65,7 +65,7 @@ class Network(object):
             raise Exception('edge\'s nodes not found in network')
         
         key = edge_key(id1, id2)
-        
+
         if key in self.edges or key in self.G.edges:
             raise Exception('edge already in network')
         self.G.add_edge(*key)

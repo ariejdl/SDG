@@ -20,8 +20,6 @@ def resolve_partition(root, size_sorted, language, network):
     # - ** detect which things are static dependencies/dynamic, e.g. subject to user change
     #     - ensure there are no cycles in event propagation
 
-    print('\n')
-
     info, warnings, errors = [], [], []
 
     all_code = []
@@ -89,8 +87,6 @@ def resolve_partition(root, size_sorted, language, network):
             all_code += code
             errors += errs
             
-    print(all_code)
-
     """
     strategies?
 

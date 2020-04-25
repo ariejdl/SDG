@@ -7,6 +7,7 @@ from functools import lru_cache
 from .utils import (camel_to_snake, register_node,
                     create_node, create_edge, NetworkBuildException,
                     get_neighbours)
+from .edges import MappingEdge
 import types
 
 class JS_TEMPLATES(object):
@@ -700,12 +701,32 @@ class FileNode(Node):
 class PythonScript(FileNode):
     language = 'python'
 
+def selector_matches(node, selector_node):
+    if node.get('node_id') is not None and node['node_id'] == selector_node.get('node_id'):
+        return True
+    elif node['tag'] == selector_node.get('selector'):
+        return True
+
+def make_tag(node):
+    parts = []
+    parts.append('<')
+    parts.append(node['tag'])
+
+    if 'node_id' in node:
+        parts.append(' id="_node_{}"'.format(node['node_id']))
+    if 'classes' in node:
+        parts.append(' class=""'.format(' '.join(node['classes'])))
+    
+    parts.append('>')
+    return ''.join(parts)
+
+
 def find_tree_node(node, selector):
     # depth first search
 
     # TODO: add better selectors, it will otherwise lead to too many matches
-    if node['tag'] == selector:
-        return node
+    if selector_matches(node, selector):
+        return node    
     
     for c in node['children']:
         res = find_tree_node(c, selector)
@@ -716,7 +737,7 @@ def find_tree_node(node, selector):
 def make_html_tree(tree):
     tags = []
     for n in tree['children']:
-        tags.append('<{}>'.format(n['tag']))
+        tags.append(make_tag(n))
         tags.append(make_html_tree(n))
         tags.append('</{}>'.format(n['tag']))
     
@@ -724,6 +745,8 @@ def make_html_tree(tree):
 
 @register_node
 class HTML_Page_Node(FileNode):
+
+    queued_body_nodes = []
     
     expected_model = {
         'javascripts': list,
@@ -736,21 +759,42 @@ class HTML_Page_Node(FileNode):
             model['mime_type'] = MIME_TYPES.HTML
         super().__init__(model)
 
-    def add_body_node(self, parent_selector, node):
-        self.model.setdefault('body_nodes', [{ 'tag': 'body', 'children': [] }])
+    def get_implicit_nodes_and_edges(self, node_id, neighbours):
+        self.queued_body_nodes = []
+        return super().get_implicit_nodes_and_edges(node_id, neighbours)
+
+    def enqueue_add_body_node(self, parent, node):
+        self.queued_body_nodes.append((parent, node))
+
+    def add_body_node(self, node_id, parent_selector, node):
+        self.model.setdefault('body_nodes',
+                              [{ 'node_id': node_id, 'tag': 'body', 'children': [] }])
+        
         n = find_tree_node(self.model['body_nodes'][0], parent_selector)
         if n is not None:
             node.setdefault('children', [])
             n['children'].append(node)
-        return None
+            return True
+        return False
 
-    def make_body(self):
+    def make_body(self, node_id):
+
+        errors = []
+
+        # TODO: this is still be wrong as order of insertion depends on network resolution order
+        # ... must add all, then figure this out
+        # ... in order to do this correctly need to convert network into a tree from selectors
+        #     ... and progressively remove detached nodes as their parents are found
+        # ... if can't find parent, add an error
+        for s, n in self.queued_body_nodes:
+            self.add_body_node(node_id, s, n)
+        
         nodes = self.model.get('body_nodes')
         if nodes is not None:
             if len(nodes) > 1:
                 raise Exception('should only have one root body node')
-            return make_html_tree(nodes[0])
-        return ''
+            return make_html_tree(nodes[0]), errors
+        return '', errors
 
     def emit_code(self, node_id, network):
         out, errors = [], []
@@ -759,6 +803,10 @@ class HTML_Page_Node(FileNode):
               self.model.get('javascripts', [])]
         css = ['<link rel="stylesheet" href="{}">'.format(css) for css in
                self.model.get('stylesheets', [])]
+
+        body, errs = self.make_body(node_id)
+
+        errors += errs
 
         out.append(Code(
             node_id=node_id,
@@ -769,12 +817,12 @@ class HTML_Page_Node(FileNode):
                 <head>
                 {head}
                 </head>
-              <body>
+                <body>
                 {body}
-              </body>
+                </body>
             </html>'''.format(
                 head='\n'.join(js + css),
-                body=self.make_body()
+                body=body
             ))
         )
         
@@ -862,6 +910,8 @@ class DOMNode(JSNode):
         # - if not in initialisation find dom and attach to it
         out, errors = [], []
 
+        self.is_inserted = False
+
         tag = self.model.get('tag')
 
         if tag is None:
@@ -869,38 +919,58 @@ class DOMNode(JSNode):
             return out, errors
         
         par = self.model.get('parent_selector')
-        self.is_inserted = False
-        
-        if par is not None:
-            # insert into HTML during compiliation time
-            html_nodes = []
 
-            # 1) check neighours for HTML node
-            neighbours = get_neighbours(node_id, network)
-            for n in neighbours:
+        neighbours = get_neighbours(node_id, network)
+        upstream, _ = get_upstream_downstream(node_id, neighbours)
+        upstream_dom = [nid for (nid, n, e) in upstream if type(n) is DOMNode]
+
+        if par is None and len(upstream_dom) == 0:
+            return out, errors
+
+        html_nodes = []
+
+        # 1) check neighours for HTML node
+        for n in neighbours:
+            if type(n) is HTML_Page_Node:
+                html_nodes.append(n)
+
+        if len(html_nodes) == 0:
+            # 2) check whole network for one HTML node and one only with same root_id
+            root_id = self.model['meta']['root_id']
+            for n in network.nodes_for_root_id(root_id):
                 if type(n) is HTML_Page_Node:
                     html_nodes.append(n)
 
-            if len(html_nodes) == 0:
-                # 2) check whole network for one HTML node and one only with same root_id
-                root_id = self.model['meta']['root_id']
-                for n in network.nodes_for_root_id(root_id):
-                    if type(n) is HTML_Page_Node:
-                        html_nodes.append(n)
+        if len(html_nodes) == 1:
+            if par is not None:
+                # insert into HTML during compiliation time
+                html_nodes[0].enqueue_add_body_node({ 'selector': par },
+                                                    { 'tag': tag, 'node_id': node_id })
+                self.is_inserted = True
+            elif len(upstream_dom) == 1:
+                # insert by parent if doesn't have any binding edges
 
-            if len(html_nodes) == 1:
-                #import pdb; pdb.set_trace()
-                n = html_nodes[0].add_body_node(par, { 'tag': tag })
-                if n is not None:
+                any_mapping = False
+
+                for nid, n, e in neighbours:
+                    if type(e) is MappingEdge:
+                        any_mapping = True
+                        break
+
+                if any_mapping == False:
+                    html_nodes[0].enqueue_add_body_node({ 'node_id': upstream_dom[0] },
+                                                        { 'tag': tag, 'node_id': node_id })
                     self.is_inserted = True
-                else:
-                    errors.append(NetworkBuildException(
-                        'Unable to find matching parent to node', node_id))
-                    
-            if len(html_nodes) > 1:
-                errors.append(NetworkBuildException(
-                    'Ambiguous HTML page to attach to, more than one found', node_id))
 
+            elif len(upstream_dom) > 1:
+                errors.append(NetworkBuildException(
+                    'Ambiguous HTML page to attach to, more than one parent found', node_id))
+                
+        elif len(html_nodes) > 1:
+            errors.append(NetworkBuildException(
+                'Ambiguous HTML page to attach to, more than one found', node_id))
+
+                
         return out, errors
 
     def emit_code(self, node_id, network):        

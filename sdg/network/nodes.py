@@ -1000,11 +1000,11 @@ class DOMNode(JSNode):
             # TODO: edge binding
             # to figure out:
             # - how to get a stable name for $svg?
-            # - more complex selectors
+            # - more complex/class selectors
             return """
 let sel = d3.select($svg)
             .selectAll("circle")
-            .data($data)
+            .data($data, $row => { console.log($row); return $row ? $row.id : $row; })
 
 let selE = sel.enter().append("circle")
 

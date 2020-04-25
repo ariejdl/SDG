@@ -17,11 +17,11 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-function invokeNode(nodeId) {
+function invokeNode(nodeId, force) {
   // need args/deps and invocation id
   let name = `node_${nodeId}`;
   if (name in _nodeRegistry) {
-    _nodeRegistry[name].invoke(++_networkInvocationId);
+    _nodeRegistry[name].invoke(++_networkInvocationId, force);
   } else {
     throw `node ${name} not found`;
   }
@@ -134,7 +134,7 @@ class Node {
     this.data = data;
   }
 
-  invoke(networkInvocationId) {
+  invoke(networkInvocationId, force) {
 
     //console.log('start invoke ' + this.callableId);
 
@@ -144,7 +144,7 @@ class Node {
     }
 
     const updatedDependencies = this.dependencies().slice()
-    if (allowCallAndChanged(_nodeDepencies[this.callableId], updatedDependencies)) {
+    if (force === true || allowCallAndChanged(_nodeDepencies[this.callableId], updatedDependencies)) {
       _nodeDepencies[this.callableId] = updatedDependencies;
 
       console.log('invoke body ' + this.callableId);

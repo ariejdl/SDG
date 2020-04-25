@@ -214,8 +214,6 @@ class JSNode(Node):
                     path, errs = server.get_static_route(node_id, fpath)
                     errors += errs
 
-                    # TODO: invoke node after fetch
-
                     if path.endswith('.csv'):
                         content = """
                         d3.csv("{uri}")
@@ -535,6 +533,8 @@ class JSClientNode(GeneralClientNode):
 
         root_id = self.model['meta']['root_id']
 
+        # TODO: if css_count == 0 add reset css
+
         if html_count == 0:
 
             html_path, errs = server.get_static_path(node_id, self.default_html_path)
@@ -575,8 +575,6 @@ class JSClientNode(GeneralClientNode):
             errors.append(NetworkBuildException(
                 'found ambiguous JavaScript node, want 1 not {}'.format(js_count), node_id=node_id))
 
-        
-            
         return out, errors
 
     def prepare_network(self, node_id, network):
@@ -791,8 +789,9 @@ class HTML_Page_Node(FileNode):
 
         errors = []
 
-        # TODO: improve
-        # naive algorithm, keep trying to add nodes until no more can be added
+        # TODO: improve naive algorithm
+        #
+        # keep trying to add nodes until no more can be added
         added_nodes = 1
         remaining_nodes = self.queued_body_nodes
         while added_nodes:
@@ -805,12 +804,18 @@ class HTML_Page_Node(FileNode):
                 else:
                     new_nodes.append((parent, node))
             remaining_nodes = new_nodes
-        
+
+        for node in remaining_nodes:
+            if node.get('node_id') is not None:
+                errors.append(NetworkBuildException(
+                    'Unable to attach HTML node to page', node['node_id']))
+            
         nodes = self.model.get('body_nodes')
         if nodes is not None:
             if len(nodes) > 1:
                 raise Exception('should only have one root body node')
             return make_html_tree(nodes[0]), errors
+        
         return '', errors
 
     def emit_code(self, node_id, network):
@@ -921,11 +926,13 @@ class DOMNode(JSNode):
         'parent_selector': str
     }
 
+    mapping_node_edge = None
     is_inserted = False
     
     def prepare_network(self, node_id, network):
         out, errors = [], []
 
+        self.mapping_node_edge = None
         self.is_inserted = False
 
         tag = self.model.get('tag')
@@ -966,17 +973,21 @@ class DOMNode(JSNode):
             elif len(upstream_dom) == 1:
                 # insert by parent if doesn't have any binding edges
 
-                any_mapping = False
-
+                mapping_nodes_edges = []
+                
                 for nid, n, e in neighbours:
                     if type(e) is MappingEdge:
-                        any_mapping = True
-                        break
+                        mapping_nodes_edges.append((n, e))
 
-                if any_mapping == False:
+                if len(mapping_nodes_edges) == 1:
+                    self.mapping_node_edge = mapping_nodes_edges[0]
+                elif len(mapping_nodes_edges) == 0:
                     html_nodes[0].enqueue_add_body_node({ 'node_id': upstream_dom[0] },
                                                         { 'tag': tag, 'node_id': node_id })
                     self.is_inserted = True
+                elif len(mapping_nodes_edges) > 1:
+                    errors.append(NetworkBuildException(
+                        'Ambiguous mapping edges count, should only have one', node_id))
 
             elif len(upstream_dom) > 1:
                 errors.append(NetworkBuildException(
@@ -991,6 +1002,18 @@ class DOMNode(JSNode):
 
     def make_body(self, node_id):
 
+        a_s = self.make_attrs_styles()
+
+        if self.mapping_node_edge is not None:
+            pass
+        
+        return '''
+        d3.select(this.data)
+        {}
+        '''.format(a_s)
+            
+            
+    def make_attrs_styles(self):
         attrs = self.model.get('attrs', {})
         styles = self.model.get('styles', {})
         s = []
@@ -998,10 +1021,9 @@ class DOMNode(JSNode):
             s.append('.attr("{}", {})'.format(k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
         for k,v in styles.items():
             s.append('.style("{}", {})'.format(k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
-        return '''
-        d3.select(this.data)
-        {}
-        '''.format('\n'.join(s))
+
+        return '\n'.join(s)
+            
 
 
     def emit_code(self, node_id, network):
@@ -1027,8 +1049,9 @@ class DOMNode(JSNode):
                 content=content
             ))
 
+
         out_, errors_ = super().emit_code(node_id, network)
-        #import pdb; pdb.set_trace()
+
         out += out_
         errors += errors_
 

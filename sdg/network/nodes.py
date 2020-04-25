@@ -930,14 +930,13 @@ class DOMNode(JSNode):
         tag = self.model.get('tag')
 
         if tag is None:
-            
             return out, errors
         
         par = self.model.get('parent_selector')
 
         neighbours = get_neighbours(node_id, network)
         upstream, _ = get_upstream_downstream(node_id, neighbours)
-        upstream_dom = [nid for (nid, n, e) in upstream if type(n) is DOMNode]
+        upstream_dom = [(nid, n, e) for (nid, n, e) in upstream if type(n) is DOMNode]
 
         if par is None and len(upstream_dom) == 0:
             return out, errors
@@ -972,9 +971,9 @@ class DOMNode(JSNode):
                         mapping_nodes_edges.append((n, e))
 
                 if len(mapping_nodes_edges) == 1:
-                    self.mapping_node_edge = mapping_nodes_edges[0]
+                    self.mapping_node_edge = (upstream_dom[0], mapping_nodes_edges[0])
                 elif len(mapping_nodes_edges) == 0:
-                    html_nodes[0].enqueue_add_body_node({ 'node_id': upstream_dom[0] },
+                    html_nodes[0].enqueue_add_body_node({ 'node_id': upstream_dom[0][0] },
                                                         { 'tag': tag, 'node_id': node_id })
                     self.is_inserted = True
                 elif len(mapping_nodes_edges) > 1:
@@ -997,44 +996,54 @@ class DOMNode(JSNode):
         a_s = self.make_attrs_styles()
 
         if self.mapping_node_edge is not None:
-            # TODO: edge binding
-            # to figure out:
-            # - how to get a stable name for $svg?
-            # - more complex/class selectors
+            upstream_node_edge, mapping_node_edge = self.mapping_node_edge
+            _1, _2, upstream_edge = upstream_node_edge
+            name = upstream_edge.model.get('meta', {}).get('name')
+            if name is None or not name.startswith('$'):
+                raise Exception("Need a name of parent element")
+
+            classes = self.model.get('classes', [])
+
+            mapping_node, mapping_edge = mapping_node_edge
+            
+            id_attr = mapping_edge.model.get('id_attribute', '')
+            if id_attr != '':
+                id_attr = ', $row => $row ? $row["{}"] : $row'.format(id_attr)
+
             return """
-let sel = d3.select($svg)
-            .selectAll("circle")
-            .data($data, $row => { console.log($row); return $row ? $row.id : $row; })
-
-let selE = sel.enter().append("circle")
-
-sel = sel.merge(selE)
-            .attr("cx", $row => $x_scale($row.x))
-            .attr("cy", $row => $y_scale($row.y))
-            .attr("r", 4)
-
-sel.exit()
-            .remove()
-
-            """
+            d3.select($svg)
+              .selectAll("{tag}{classes_selector}")
+              .data($data{id_attr})
+              .join("{tag}")
+              .attr("class", "{classes}")
+              {a_s}
+            """.format(
+                a_s=a_s,
+                tag=self.model['tag'],
+                classes_selector=''.join(['.{}'.format(c) for c in classes]),
+                classes=' '.join(classes),
+                id_attr=id_attr
+            )
         
         return '''
         d3.select(this.data)
         {}
         '''.format(a_s)
             
-            
     def make_attrs_styles(self):
+
+        raw_str = lambda v: type(v) is str and not (v.startswith('$') or v.startswith('('))
+        
         attrs = self.model.get('attrs', {})
         styles = self.model.get('styles', {})
         s = []
         for k,v in attrs.items():
             s.append('.attr("{}", {})'.format(
-                k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
+                k, '"{}"'.format(v) if raw_str(v) else v))
         
         for k,v in styles.items():
             s.append('.style("{}", {})'.format(
-                k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
+                k, '"{}"'.format(v) if raw_str(v) else v))
 
         return '\n'.join(s)
             

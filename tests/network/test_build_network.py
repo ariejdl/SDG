@@ -96,10 +96,11 @@ def test_basic():
             {'id': 7, 'type': 'dom_node', 'model': {
                 'meta': { 'root_id': 3 },
                 'tag': 'circle',
+                'classes': ['dot'],
                 'attrs': {
-                    'cx': '$x_scale($conf.x_accessor($row))',
-                    'cy': '$y_scale($conf.y_accessor($row))',
-                    'r': 4 } } },
+                    'cx': '$row => $x_scale($conf.x_accessor($row))',
+                    'cy': '$row => $y_scale($conf.y_accessor($row))',
+                    'r': '() => Math.random() * 10 + 2' } } },
             
             {'id': 8, 'type': 'js_d3_node', 'model': {
                 'meta': { 'root_id': 3 },
@@ -125,6 +126,7 @@ def test_basic():
 
             # only needed for mapping data to something variable
             {'id1': 5, 'id2': 7, 'type': 'mapping_edge', 'model': {
+                'id_attribute': 'id',
                 'meta': { 'target_id': 7, 'name': '$data' } } },
             
             {'id1': 6, 'id2': 7, 'type': None, 'model': {

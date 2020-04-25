@@ -35,7 +35,9 @@ def setup_module():
         f.write("id,x,y\n")
         f.write("1,2,3\n")
         f.write("2,5,6\n")
-        f.write("3,8,9")
+        f.write("3,8,9\n")
+        f.write("3,9,11\n")
+        f.write("3,14,20\n")
         f.write("4,4,10")
 
 def _teardown():
@@ -79,8 +81,8 @@ def test_basic():
                 'lookup': {
                     'width': 200,
                     'height': 200,
-                    'x_accessor': '(v) => v.x', # could use static analysis on this
-                    'y_accessor': '(v) => v.y',
+                    'x_accessor': '(v) => +v.x', # could use static analysis on this
+                    'y_accessor': '(v) => +v.y',
                     'id_accessor': '(v) => v.id'
                 } } },
             
@@ -122,7 +124,8 @@ def test_basic():
             {'id1': 2, 'id2': 5, 'type': None, 'model': None },
 
             # only needed for mapping data to something variable
-            {'id1': 5, 'id2': 7, 'type': 'mapping_edge', 'model': { } },
+            {'id1': 5, 'id2': 7, 'type': 'mapping_edge', 'model': {
+                'meta': { 'target_id': 7, 'name': '$data' } } },
             
             {'id1': 6, 'id2': 7, 'type': None, 'model': {
                 'meta': { 'target_id': 7 , 'name': '$svg' } } },

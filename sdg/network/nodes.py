@@ -1005,7 +1005,26 @@ class DOMNode(JSNode):
         a_s = self.make_attrs_styles()
 
         if self.mapping_node_edge is not None:
-            pass
+            # TODO: edge binding
+            # to figure out:
+            # - how to get a stable name for $svg?
+            # - more complex selectors
+            return """
+let sel = d3.select($svg)
+            .selectAll("circle")
+            .data($data)
+
+let selE = sel.enter().append("circle")
+
+sel = sel.merge(selE)
+            .attr("cx", $row => $x_scale($row.x))
+            .attr("cy", $row => $y_scale($row.y))
+            .attr("r", 4)
+
+sel.exit()
+            .remove()
+
+            """
         
         return '''
         d3.select(this.data)
@@ -1018,9 +1037,12 @@ class DOMNode(JSNode):
         styles = self.model.get('styles', {})
         s = []
         for k,v in attrs.items():
-            s.append('.attr("{}", {})'.format(k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
+            s.append('.attr("{}", {})'.format(
+                k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
+        
         for k,v in styles.items():
-            s.append('.style("{}", {})'.format(k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
+            s.append('.style("{}", {})'.format(
+                k, '"{}"'.format(v) if type(v) is str and not v.startswith('$') else v))
 
         return '\n'.join(s)
             

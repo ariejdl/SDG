@@ -37,7 +37,7 @@ def test_neighbours(neighbours, tests):
     return out
 
 def get_args(upstream):
-    errors, args = [], []
+    args, errors = [], []
     
     for nid, n, e in upstream:
         arg_name = e.model['meta'].get('name')
@@ -47,7 +47,7 @@ def get_args(upstream):
                 continue
             args.append(arg_name)
         
-    return errors, args
+    return args, errors
 
 def get_upstream_downstream(node_id, neighbours):
     upstream, downstream = [], []
@@ -260,10 +260,12 @@ class JSNode(Node):
             'dependentArgs': [] # the arguments supplied to a dependent
         }
         
-        errs, args = get_args(upstream)
+        args, errs = get_args(upstream)
         errors += errs
 
-        for nid, n, e in upstream:
+        upstream_args = sorted(zip(upstream, args), key=lambda v: v[1])
+
+        for (nid, n, e), arg in upstream_args:
             template_args['dependencies'].append('node_{sym}.data'.format(sym=nid))
 
         for nid, n, e in downstream:
@@ -272,7 +274,7 @@ class JSNode(Node):
                 'true' if n.model.get('allow_null_activation') == True else 'false')
 
             upstream_, _ = get_upstream_downstream(nid, get_neighbours(nid, network))
-            errs, dep_args = get_args(upstream_)
+            dep_args, errs = get_args(upstream_)
             if len(errs) == 0:
                 # sort by name, then get node ids
                 sorted_args = sorted(zip(dep_args, upstream_), key=lambda v: v[0])
@@ -282,7 +284,7 @@ class JSNode(Node):
             else:
                 errors.append(NetworkBuildError("dependent has invalid arguments", node_id))
 
-        template_args['namedArgs'] = make_fn_args(sorted(args))
+        template_args['namedArgs'] = make_fn_args([arg for u, arg in upstream_args])
 
         # convert list to string
         for k,v in template_args.items():

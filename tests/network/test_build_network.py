@@ -125,11 +125,11 @@ def test_basic():
             {'id1': 5, 'id2': 7, 'type': 'mapping_edge', 'model': { } },
             
             {'id1': 6, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'name': '$svg' } },
+                'meta': { 'target_id': 7 , 'name': '$svg' } } },
             {'id1': 8, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'name': '$x_scale' } },
+                'meta': { 'target_id': 7 , 'name': '$x_scale' } } },
             {'id1': 9, 'id2': 7, 'type': None, 'model': {
-                'meta': { 'target_id': 7 }, 'name': '$y_scale' } },
+                'meta': { 'target_id': 7 , 'name': '$y_scale' } } },
 
             # places where $conf is used
             {'id1': 10, 'id2': 7, 'type': None, 'model': {

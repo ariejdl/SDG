@@ -6,7 +6,7 @@ import logging as log
 import networkx as nx
 
 from .utils import NetworkBuildException, edge_key, get_neighbours
-from .nodes import JS_TEMPLATES, JSClientNode, WebServerNode, HTML_Node
+from .nodes import JS_TEMPLATES, JSClientNode, WebServerNode
 
 def resolve_partition(root, size_sorted, language, network):
 

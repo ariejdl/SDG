@@ -488,7 +488,7 @@ class JSClientNode(GeneralClientNode):
     def test_neighbours(self, neighbours):
         return test_neighbours(neighbours,
                        { 'server': lambda n, e: isinstance(n, WebServerNode),
-                         'html': lambda n,e: isinstance(n, HTML_Node),
+                         'html': lambda n,e: isinstance(n, HTML_Page_Node),
                          'js': lambda n,e: (isinstance(n, FileNode) and
                                             n.model.get('mime_type') == MIME_TYPES.JS) })
         
@@ -534,7 +534,7 @@ class JSClientNode(GeneralClientNode):
 
             n = create_node({ 'mime_type': MIME_TYPES.HTML, 'path': html_path,
                               'meta': { 'root_id': root_id } },
-                            type='html_node')
+                            type='html_page_node')
             e = create_edge({ })
 
             out.append((n, e))
@@ -700,12 +700,14 @@ class FileNode(Node):
 class PythonScript(FileNode):
     language = 'python'
 
-def find_tree_node(parent, selector):
+def find_tree_node(node, selector):
     # depth first search
-    for c in parent['children']:
-        # TODO: add better selectors, it will otherwise lead to too many matches
-        if c['tag'] == selector:
-            return c
+
+    # TODO: add better selectors, it will otherwise lead to too many matches
+    if node['tag'] == selector:
+        return node
+    
+    for c in node['children']:
         res = find_tree_node(c, selector)
         if res is not None:
             return res
@@ -721,7 +723,7 @@ def make_html_tree(tree):
     return '\n'.join(tags)
 
 @register_node
-class HTML_Node(FileNode):
+class HTML_Page_Node(FileNode):
     
     expected_model = {
         'javascripts': list,
@@ -876,17 +878,18 @@ class DOMNode(JSNode):
             # 1) check neighours for HTML node
             neighbours = get_neighbours(node_id, network)
             for n in neighbours:
-                if type(n) is HTML_Node:
+                if type(n) is HTML_Page_Node:
                     html_nodes.append(n)
 
             if len(html_nodes) == 0:
                 # 2) check whole network for one HTML node and one only with same root_id
                 root_id = self.model['meta']['root_id']
                 for n in network.nodes_for_root_id(root_id):
-                    if type(n) is HTML_Node:
+                    if type(n) is HTML_Page_Node:
                         html_nodes.append(n)
 
             if len(html_nodes) == 1:
+                #import pdb; pdb.set_trace()
                 n = html_nodes[0].add_body_node(par, { 'tag': tag })
                 if n is not None:
                     self.is_inserted = True
@@ -897,7 +900,6 @@ class DOMNode(JSNode):
             if len(html_nodes) > 1:
                 errors.append(NetworkBuildException(
                     'Ambiguous HTML page to attach to, more than one found', node_id))
-        
 
         return out, errors
 

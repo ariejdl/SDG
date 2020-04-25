@@ -707,13 +707,16 @@ def selector_matches(node, selector_node):
     elif node['tag'] == selector_node.get('selector'):
         return True
 
+def node_to_id_selector(node_id):
+    return "_node_{}".format(node_id)
+
 def make_tag(node):
     parts = []
     parts.append('<')
     parts.append(node['tag'])
 
     if 'node_id' in node:
-        parts.append(' id="_node_{}"'.format(node['node_id']))
+        parts.append(' id="{}"'.format(node_to_id_selector(node['node_id'])))
     if 'classes' in node:
         parts.append(' class=""'.format(' '.join(node['classes'])))
     
@@ -905,9 +908,6 @@ class DOMNode(JSNode):
     is_inserted = False
     
     def prepare_network(self, node_id, network):
-        # TODO:
-        # - check if attached to dom from neighbours
-        # - if not in initialisation find dom and attach to it
         out, errors = [], []
 
         self.is_inserted = False
@@ -973,11 +973,37 @@ class DOMNode(JSNode):
                 
         return out, errors
 
-    def emit_code(self, node_id, network):        
-        out, errors = super().emit_code(node_id, network)
+    def make_body(self, node_id):
+        return '''
+        d3.select(this.data).attr('width', 100)
+        '''
 
+    def emit_code(self, node_id, network):
+        out, errors = [], []
+        
         if self.is_inserted:
-            # - when dom loads get ref to this node
-            pass
+            selector = node_to_id_selector(node_id)
+            content = """
+            _domLoadCallbacks.push(() => {{
+              const el = document.getElementById("{selector}")
+              if (!el) {{
+                throw "element not found for node: #{selector}"
+              }}
+              node_{sym}.data = el;
+              invokeNode({sym});
+            }});
+            """.format(selector=selector, sym=node_id)
+
+            out.append(Code(
+                node_id=node_id,
+                language=self.language,
+                file_name=None,
+                content=content
+            ))
+
+        out_, errors_ = super().emit_code(node_id, network)
+        #import pdb; pdb.set_trace()
+        out += out_
+        errors += errors_
 
         return out, errors

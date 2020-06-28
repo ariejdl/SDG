@@ -70,7 +70,8 @@ def test_basic():
                 'meta': { 'root_id': 1 },
                 'path': os.path.abspath(_test_data)
             }, },
-            
+
+            # consider getting rid of this node type and replacing it with HTML + JavaScript file
             {'id': 3, 'type': 'js_client_node', 'model': { 'meta': { 'root_id': 3 }  } },
 
             {'id': 5, 'type': 'mapping_table_node', 'model': { 'meta': { 'root_id': 3 }  } },

@@ -1,6 +1,10 @@
 
 import os
+import sys
 import tornado
+import logging as log
+
+log.basicConfig(stream=sys.stdout, level=log.DEBUG)
 
 from notebook.services.contents.filemanager import FileContentsManager
 
@@ -64,7 +68,8 @@ def main():
     ], **settings)
 
     init_terminal(application, cur_dir, server_url, settings)
-    
+
+    log.info("listening on {}".format(port))
     application.listen(port)
     tornado.ioloop.IOLoop.current().start()
 

@@ -14,7 +14,7 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
-    "@lumino/widgets": "^1.11.1",
+    "@lumino/widgets": "^1.13.2",
     "@types/d3": "^5.7.2",
     "@types/xterm": "^3.0.0",
     "css-loader": "^3.5.1",

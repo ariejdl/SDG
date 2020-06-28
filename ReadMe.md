@@ -2,6 +2,8 @@
 
 Save time in data-visualisation and software development, particular web software application development.  Influenced by the principles of visual basic, and popular approaches in data visualisation SDG tries to simplify programming.
 
+**N.B. during development - make the overriding goal data visualistion, more than 'data binding' or 'network architecture' as this will hopefully result in the best outcomes.**
+
 ## Development
 
 `pip install -e .`

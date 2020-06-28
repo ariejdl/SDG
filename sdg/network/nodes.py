@@ -88,7 +88,9 @@ class Code():
             obj[k] = getattr(self, k)
         return json.dumps(obj)
 
-
+# TODO: probably much simpler to set errors on node itself, rather than pass arguments
+# ... clear with init() and finish() on object to collect at end
+    
 class Node(object):
     """
     note that nodes will have different characteristics when "static" versus when "running", i.e. after

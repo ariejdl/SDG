@@ -8,32 +8,9 @@ log.basicConfig(stream=sys.stdout, level=log.DEBUG)
 
 from notebook.services.contents.filemanager import FileContentsManager
 
-from ..network.network import NetworkManager
 from .terminal_handlers import initialize as init_terminal
 from .kernel_handlers import handlers as kernel_handlers
 from .contents_handlers import handlers as contents_handlers
-
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("""
-        <!DOCTYPE html>
-        <html>
-          <head>
-
-            <link rel="stylesheet" href="/static/xterm.css?q=1" />
-            <link rel="stylesheet" href="/static/style.css?q=1" />
-            <!--<script src="/static/app.bundle.js?q=1"></script>-->
-
-            <script src="/static/xterm.js?q=1"></script>
-            <script src="/static/terminado.js?q=1"></script>
-            <script src="/static/old_test.js?q=1"></script>
-
-          </head>
-          <body>
-          </body>
-        </html>
-        """)
-
 
 class WSEchoHandler(tornado.websocket.WebSocketHandler):
 
@@ -58,13 +35,13 @@ def main():
     cur_dir = os.path.abspath(os.getcwd())
 
     settings = {
-        "static_path": os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '..', '..', 'client', 'dist')),
+        #"static_path": os.path.abspath(
+        #    os.path.join(os.path.dirname(__file__), '..', '..', 'client', 'dist')),
+        
         # TODO: implement
         "login_url": "/login",
         "base_url": "/",
         "contents_manager": FileContentsManager(),
-        "network_manager": NetworkManager(),
 
         "xsrf_cookies": False,
         
@@ -78,7 +55,6 @@ def main():
     }
     
     application = tornado.web.Application([
-        (r"/", MainHandler),
         (r"/echo", WSEchoHandler),
 
         *kernel_handlers,

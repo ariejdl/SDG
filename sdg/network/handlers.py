@@ -1,7 +1,0 @@
-
-class NetworkSocket():
-    pass
-
-
-handlers = [
-]

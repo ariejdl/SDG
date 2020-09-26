@@ -5,6 +5,7 @@ from notebook.services.contents.handlers import ContentsHandler
 from .handler_utils import BaseHandler
 
 class AuthContentsHandler(BaseHandler, ContentsHandler):
+
     pass
 
 

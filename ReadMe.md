@@ -10,6 +10,8 @@ Save time in data-visualisation and software development, particular web softwar
 
 Longer term thought: the server is written in Python rather than Typescript partly because jupyter_client is in use.
 
+note in MainHandler the old .js files are referenced in <script> tags, these show server connectivity, these have been copied to dist/ from src/third_party and xterm from node_modules
+
 ## Tests
 
 `pytest tests [-s]`

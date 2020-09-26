@@ -19,6 +19,12 @@ from notebook.utils import url_path_join as ujoin
 from notebook.terminal import TermSocket
 from notebook.terminal import api_handlers
 
+class _TermSocket(TermSocket):
+
+    def check_origin(self, origin):
+        # enable CORS, check security! check if overriden by allow_origin='*'
+        return True
+
 # slightly modified, no html page route
 def initialize(webapp, notebook_dir, connection_url, settings):
     if os.name == 'nt':
@@ -38,7 +44,7 @@ def initialize(webapp, notebook_dir, connection_url, settings):
     terminal_manager.log = app_log
     base_url = webapp.settings['base_url']
     handlers = [
-        (ujoin(base_url, r"/terminals/websocket/(\w+)"), TermSocket,
+        (ujoin(base_url, r"/terminals/websocket/(\w+)"), _TermSocket,
              {'term_manager': terminal_manager}),
         (ujoin(base_url, r"/api/terminals"), api_handlers.TerminalRootHandler),
         (ujoin(base_url, r"/api/terminals/(\w+)"), api_handlers.TerminalHandler),

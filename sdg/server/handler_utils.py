@@ -5,9 +5,25 @@
 import tornado.web
 
 class BaseHandler(tornado.web.RequestHandler):
+
+    def set_default_headers(self):
+        #enabling CORS, careful with security!
+
+        super().set_default_headers()
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header('Access-Control-Allow-Methods',
+                        'GET, PUT, POST, PATCH, DELETE, OPTIONS')
+
+    def options(self, *args, **kwargs):
+        # for CORS
+        # no body
+        self.set_status(204)
+        self.finish()
+
     def get_current_user(self):
         # TODO: add static encrypted password test and use secure cookie with 1 day duration
         return "anon_user"
+
 
 class WebSocketMixin(object):
 

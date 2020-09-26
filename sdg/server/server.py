@@ -20,8 +20,13 @@ class MainHandler(tornado.web.RequestHandler):
         <html>
           <head>
 
+            <link rel="stylesheet" href="/static/xterm.css?q=1" />
             <link rel="stylesheet" href="/static/style.css?q=1" />
-            <script src="/static/app.bundle.js?q=1"></script>
+            <!--<script src="/static/app.bundle.js?q=1"></script>-->
+
+            <script src="/static/xterm.js?q=1"></script>
+            <script src="/static/terminado.js?q=1"></script>
+            <script src="/static/old_test.js?q=1"></script>
 
           </head>
           <body>
@@ -41,6 +46,10 @@ class WSEchoHandler(tornado.websocket.WebSocketHandler):
     def on_close(self):
         pass
 
+    def check_origin(self, origin):
+        # enable CORS, check security! check if overriden by allow_origin='*'
+        return True
+    
 
 def main():
     port = 8001
@@ -55,7 +64,17 @@ def main():
         "login_url": "/login",
         "base_url": "/",
         "contents_manager": FileContentsManager(),
-        "network_manager": NetworkManager()
+        "network_manager": NetworkManager(),
+
+        "xsrf_cookies": False,
+        
+        'allow_origin': '*',
+        'headers': {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Methods': '*'
+        }
+
     }
     
     application = tornado.web.Application([

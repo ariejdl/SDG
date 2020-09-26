@@ -1,10 +1,10 @@
 
 //import { Terminal } from 'xterm';
 
-import { SceneWidget } from './scene';
+//import { SceneWidget } from './scene';
 
 import { DockPanel } from '@lumino/widgets';
-import { ResizeMessage, Widget } from '@lumino/widgets';
+import { Widget } from '@lumino/widgets';
 
 import './base.scss';
 import '@lumino/widgets/style/index.css';
@@ -26,18 +26,25 @@ function createContent(title: string): Widget {
 document.addEventListener('DOMContentLoaded', function() {
 
     // https://github.com/jupyterlab/lumino/tree/master/packages/widgets
-    var panel = new DockPanel({ spacing: 0 });
+  var panel = new DockPanel({ spacing: 0 });
 
-    let scene = new SceneWidget();
-    scene.title.label = "System";
+  // N.B. adding scene causes tabs to slow down....
+
+  //let scene = new SceneWidget();
+  /*
+  let scene = createContent('x');
+  scene.title.label = "System";
     scene.title.closable = true;
+  */
 
-    var w1 = createContent('Red');
+
+  //var w1 = createContent('Red');
     var w2 = createContent('Green');
     var w3 = createContent('Blue');
 
-    panel.addWidget(scene);
-    panel.addWidget(w2);
+  //panel.addWidget(scene);
+  panel.addWidget(w2);
+  //panel.addWidget(w1);
     panel.addWidget(w3, { mode: 'split-right', ref: w2 });
     //panel.addWidget(scene2, { mode: 'split-right', ref: w2 });
 

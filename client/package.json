@@ -2,6 +2,10 @@
   "name": "babel-typescript-sample",
   "version": "0.7.2",
   "license": "MIT",
+  "scripts": {
+    "build": "tsc && webpack",
+    "clean": "rimraf build"
+  },
   "devDependencies": {
     "@babel/cli": "^7.8.3",
     "@babel/core": "^7.8.3",
@@ -14,6 +18,10 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
+    "@lumino/commands": "^1.11.2",
+    "@lumino/default-theme": "^0.4.2",
+    "@lumino/dragdrop": "^1.6.2",
+    "@lumino/messaging": "^1.4.2",
     "@lumino/widgets": "^1.13.2",
     "@types/d3": "^5.7.2",
     "@types/xterm": "^3.0.0",
